@@ -17,7 +17,8 @@ Template for building SKSE plugins using the NG branch of CommonLibVR.
   - After install, add a new environment variable named `VCPKG_ROOT` with the value as the path to the folder containing vcpkg
 
 ## User Requirements
-
+- [Skyrim AE 1.6.1170]
+  - This is currently the only partially working version with the 0.1.0 Alpha release, do not run on other versions until support is ready or things may break a lot.
 - [Address Library for SKSE](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
   - Needed for SSE/AE
 - [VR Address Library for SKSEVR](https://www.nexusmods.com/skyrimspecialedition/mods/58101)
@@ -33,7 +34,7 @@ Template for building SKSE plugins using the NG branch of CommonLibVR.
 Open terminal (e.g., PowerShell) and run the following commands:
 
 ```
-git clone https://github.com/ponzipyramid/CommonLibSSE-NG-Template.git --recursive
+git clone https://github.com/naitro2010/ArmorUnlimited --recursive
 cd CommonLibSSE-NG-Template
 .\BuildRelease.bat
 ```
