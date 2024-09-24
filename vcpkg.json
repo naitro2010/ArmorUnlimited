@@ -1,0 +1,18 @@
+{
+  "name": "sampleplugin",
+  "version-semver": "0.7.4",
+  "description": "",
+  "license": "GPL-3.0",
+  "dependencies": [
+    "fmt",
+    "directxtk",
+    "rapidcsv",
+    "spdlog",
+    "xbyak",
+    "catch2",
+    "magic-enum",
+    "nlohmann-json",
+    "clib-util"
+  ],
+  "builtin-baseline": "83972272512ce4ede5fc3b2ba98f6468b179f192"
+}
