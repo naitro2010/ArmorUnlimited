@@ -302,9 +302,13 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
     uint64_t retval = 0;
    
     bool no1P = false;
-    if (actor->GetBiped1(false) == actor->GetBiped1(true)) {
-        no1P = true;
-    }
+	if (actor)
+	{
+		uint64_t* actor_raw = (uint64_t*)actor;
+		if ((actor_raw[0x268 / 8] != actor_raw[0x8f0 / 8]) && actor_raw[0x268 / 8] != 0 && actor_raw[0x8f0 / 8] != 0) {
+			no1P = true;
+		}
+	}
     if (no1P == false) {
         if (actor->GetBiped1(true)) {
             RE::BipedAnim *bipedanim = actor->GetBiped1(true).get();
@@ -340,10 +344,10 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                                 //SKSE::GetTaskInterface()->AddTask([item,actor]() {
                                     if (actor) {
                                         if (!actor->IsDisabled()) {
-                                            RE::BSTSmartPointer bipedptr(actor->GetBiped1(true).get());
-											/* PrepareEquipBiped(
+											RE::BSTSmartPointer bipedptr((RE::BipedAnim*)actor_raw[0x8f0 / 8]);
+											PrepareEquipBiped(
                                                 (RE::TESObjectARMO *)item, actor->GetRace(), &bipedptr,
-                                                (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);*/
+                                                (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
                                         }
                                     }
                                     actor->DecRefCount();
@@ -398,10 +402,10 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                         item->IncRef();
                         //SKSE::GetTaskInterface()->AddTask([item, actor]() {
                             if (!actor->IsDisabled()) {
-                                RE::BSTSmartPointer bipedptr(actor->GetBiped1(false).get());
-                            
-                                /* PrepareEquipBiped((RE::TESObjectARMO*)item, actor->GetRace(), &bipedptr,
-                                                  (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);*/
+							    RE::BSTSmartPointer bipedptr((RE::BipedAnim*)actor_raw[0x268 / 8]);
+                                
+                                PrepareEquipBiped((RE::TESObjectARMO*)item, actor->GetRace(), &bipedptr,
+                                                  (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
                                                   
                             }
                             actor->DecRefCount();
