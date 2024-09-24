@@ -65,6 +65,8 @@ void HookAfterBipedDtor(uint64_t, uint64_t, uint64_t) {
             
             for (auto &p : BipedAnimToExtraWorn[to_destroy_bipedanim]) {
                 auto biped_dtor_3d = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212460).address());
+				auto biped_clear_3d =
+					(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(0x212560).address());
                 if (p.second != nullptr) {
                     biped_dtor_3d(p.second, 0, 0);
                     free((void *)p.second);
@@ -77,6 +79,17 @@ void HookAfterBipedDtor(uint64_t, uint64_t, uint64_t) {
         ret_from_bipedanim_dtor[0] = 0x90;
         BipedAnimToExtraWorn.erase(to_destroy_bipedanim);
         to_destroy_bipedanim = nullptr;
+    }
+}
+void Clear3DHook(RE::BipedAnim * bipedanim, uint64_t arg2, uint64_t arg3) {
+    std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
+    auto biped_clear_3d =
+    (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212560).address());
+    biped_clear_3d(bipedanim,arg2,arg3);
+    if (BipedAnimToExtraWorn.contains(bipedanim)) {
+        for (auto p : BipedAnimToExtraWorn[bipedanim]) {
+            biped_clear_3d(p.second, 0, 0);
+        }
     }
 }
 void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmartPointer<RE::BipedAnim> *bipedanim_sptr,
@@ -124,8 +137,7 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
                             bool done2 = false;
                             bipedanim->IncRef();
                             uint64_t *actor_raw = (uint64_t *)bipedanim->actorRef.get().get();
-                            if (bipedanim->actorRef.get().get()->GetBiped1(true) !=
-                                    bipedanim->actorRef.get().get()->GetBiped1(false) &&
+							if ((actor_raw[0x8f0 / 8] != actor_raw[0x268/8]) &&
                                 actor_raw[0x8f0 / 8] != 0x0 && actor_raw[0x8f0 / 8] == (uint64_t)bipedanim) {
                                   
                                 RE::BSTSmartPointer new_biped(p.second);
@@ -151,8 +163,7 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
                                     }
                                 
                                 done2 = true;
-                            }
-                            if (actor_raw[0x268 / 8] != 0x0 &&
+                            } else if (actor_raw[0x268 / 8] != 0x0 &&
                                 actor_raw[0x268 / 8] == (uint64_t)bipedanim) {
                                 
                                 RE::BSTSmartPointer new_biped(p.second);
@@ -221,13 +232,15 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
                             BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim *>());
                         }
                         bool found = false;
-                        for (auto &p : BipedAnimToExtraWorn[actor->GetBiped1(false).get()]) {
+                        if (BipedAnimToExtraWorn[actor->GetBiped1(false).get()].contains(item->formID&0xFFFFFFFF)) {
+                            auto p = std::pair(item->formID&0xFFFFFFFF,BipedAnimToExtraWorn[actor->GetBiped1(false).get()][item->formID&0xFFFFFFFF]);
+                        
                             if ((p.first & 0xFFFFFFFF) == (item->formID & 0xFFFFFFFF)) {
                                 biped_clear_3d(p.second, 0, 0);
                                 
                                 done = true;
                                 found = true;
-                                break;
+
                             }
                         }
                     }
@@ -238,16 +251,18 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
                                 BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim *>());
                             }
                             bool found = false;
-                            for (auto &p : BipedAnimToExtraWorn[actor->GetBiped1(true).get()]) {
+                            if (BipedAnimToExtraWorn[actor->GetBiped1(true).get()].contains(item->formID&0xFFFFFFFF)) {
+                                auto p = std::pair(item->formID&0xFFFFFFFF,BipedAnimToExtraWorn[actor->GetBiped1(true).get()][item->formID&0xFFFFFFFF]);
+                            
                                 if ((p.first & 0xFFFFFFFF) == (item->formID & 0xFFFFFFFF)) {
                                     biped_clear_3d(p.second, 0, 0);
                                     done = true;
                                     found = true;
-                                    break;
                                 }
                             }
                         }
                     }
+                    
                 }
             }
         }
@@ -322,18 +337,18 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                             if (actor->GetActorBase()) {
                                 actor->IncRefCount();
                                 item->IncRef();
-                                SKSE::GetTaskInterface()->AddTask([item,actor]() {
+                                //SKSE::GetTaskInterface()->AddTask([item,actor]() {
                                     if (actor) {
                                         if (!actor->IsDisabled()) {
                                             RE::BSTSmartPointer bipedptr(actor->GetBiped1(true).get());
-                                            PrepareEquipBiped(
+											/* PrepareEquipBiped(
                                                 (RE::TESObjectARMO *)item, actor->GetRace(), &bipedptr,
-                                                (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
+                                                (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);*/
                                         }
                                     }
                                     actor->DecRefCount();
                                     item->DecRef();
-                                });
+                                //});
                             }
                         }
                     }
@@ -381,16 +396,17 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                     if (actor->GetActorBase()) {
                         actor->IncRefCount();
                         item->IncRef();
-                        SKSE::GetTaskInterface()->AddTask([item, actor]() {
+                        //SKSE::GetTaskInterface()->AddTask([item, actor]() {
                             if (!actor->IsDisabled()) {
                                 RE::BSTSmartPointer bipedptr(actor->GetBiped1(false).get());
                             
-                                PrepareEquipBiped((RE::TESObjectARMO *)item, actor->GetRace(), &bipedptr,
-                                                  (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
+                                /* PrepareEquipBiped((RE::TESObjectARMO*)item, actor->GetRace(), &bipedptr,
+                                                  (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);*/
+                                                  
                             }
                             actor->DecRefCount();
                             item->DecRef();
-                        });
+                        //});
                     }
                 }
                 if (no1P == true) {
@@ -401,9 +417,9 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
     }
 
    
-
- 
-            
+    if (actor) {
+        
+    }
 
     return retval;
 }
@@ -466,6 +482,14 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	    real_unequip_fn = (void (*)(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5
 	                                ))(REL::Offset(0x6cc810).address());
 	    trampoline.write_call<5>(REL::Offset(0x6ca1c9).address(),UnequipHook);
+        
+        trampoline.write_call<5>(REL::Offset(0x726f7e).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0x726fe8).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0x727036).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0x952f58).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0xa0c76f).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0x6870cc).address(),Clear3DHook);
+        trampoline.write_call<5>(REL::Offset(0x2136aa).address(),Clear3DHook);
 	    return true;
 }
 
