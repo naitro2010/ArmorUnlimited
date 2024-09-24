@@ -6,7 +6,58 @@
 #include <windows.h>
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
+#define FOR640
+#ifdef FOR640
+static uint64_t slotpatch_offset = 0x646d4e;
+#else
+static uint64_t slotpatch_offset = 0x6a0b3e;
+#endif
+#ifdef FOR640
+static uint64_t addwornitemvtable0 = 0x174cdc0;
+static uint64_t addwornitemvtable1 = 0x1754ae8;
+static uint64_t addwornitemvtable2 = 0x175af28;
+static uint64_t addwornitemhook0 = 0x645e2d;
+static uint64_t addwornitemhook1 = 0x645ead;
+static uint64_t addwornitemhook2 = 0x645f2b;
+static uint64_t addwornitemhook3 = 0x646008;
+static uint64_t ret_from_bipedanim_dtor_offset = 0x1d2fd4;
+static uint64_t call_unequipall_from_dtor_offset = 0x1d2f92;
+static uint64_t unequip_all_offset = 0x1d2480;
+static uint64_t init_worn_armor = 0x239850;
+static uint64_t prepare_equip_biped_hook0 = 0x37e8ce;
+static uint64_t prepare_equip_biped_hook1 = 0x37d808;
+static uint64_t prepare_equip_biped_hook2 = 0x37d762;
+static uint64_t prepare_equip_biped_hook3 = 0x1d3cd9;
+static uint64_t clear_3d_hooks[] = { 0x62d2dc, 0x62d2f7, 0x6cd14, 0x6cd1b8, 0x6cd206, 0x8f3d18, 0x8f3d87, 0x9ae34f };
+static uint64_t unequip_hook = 0x6703c9;
+static uint64_t real_unequip = 0x672a10;
+static uint64_t equip_biped = 0x1d40a0;
+static uint64_t construct_biped_offset = 0x1d2e60;
+static uint64_t biped_dtor = 0x1d2f80;
+#else
+static uint64_t addwornitemvtable0 = 0x189db28;
+static uint64_t addwornitemvtable1 = 0x18a5810;
+static uint64_t addwornitemvtable2 = 0x18abc78;
 
+static uint64_t addwornitemhook0 = 0x69fc1d;
+static uint64_t addwornitemhook1 = 0x69fc9d;
+static uint64_t addwornitemhook2 = 0x69fd1b;
+static uint64_t addwornitemhook3 = 0x69fdf8;
+static uint64_t ret_from_bipedanim_dtor_offset = 0x2124b4;
+static uint64_t call_unequipall_from_dtor_offset = 0x212472;
+static uint64_t unequip_all_offset = 0x212560;
+static uint64_t init_worn_armor = 0x279320;
+static uint64_t prepare_equip_biped_hook0 = 0x3be42e;
+static uint64_t prepare_equip_biped_hook1 = 0x3bd368;
+static uint64_t prepare_equip_biped_hook2 = 0x3bd2c2;
+static uint64_t prepare_equip_biped_hook3 = 0x2131b9;
+static uint64_t clear_3d_hooks[] = { 0x726f7e, 0x726fe8, 0x727036, 0x952f58, 0xa0c76f, 0x6870cc, 0x2136aa };
+static uint64_t unequip_hook = 0x6ca1c9;
+static uint64_t real_unequip = 0x6cc810;
+static uint64_t equip_biped = 0x213580;
+static uint64_t construct_biped_offset = 0x212340;
+static uint64_t biped_dtor = 0x212460;
+#endif
 void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::level::info)
 {
 #ifndef NDEBUG
@@ -58,15 +109,15 @@ void UnequipAllBipedDtor(RE::BipedAnim *bipedanim, uint64_t arg2, uint64_t arg3)
 void HookAfterBipedDtor(uint64_t, uint64_t, uint64_t) {
     std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
     if (to_destroy_bipedanim != nullptr) {
-        uint8_t *ret_from_bipedanim_dtor = (uint8_t *)REL::Offset(0x2124b4).address();
+		uint8_t* ret_from_bipedanim_dtor = (uint8_t*)REL::Offset(ret_from_bipedanim_dtor_offset).address();
         ret_from_bipedanim_dtor[0] = 0xc3;
         if (BipedAnimToExtraWorn.contains(to_destroy_bipedanim)) {
             
             
             for (auto &p : BipedAnimToExtraWorn[to_destroy_bipedanim]) {
-                auto biped_dtor_3d = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212460).address());
+                auto biped_dtor_3d = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(biped_dtor).address());
 				auto biped_clear_3d =
-					(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(0x212560).address());
+					(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
                 if (p.second != nullptr) {
                     biped_dtor_3d(p.second, 0, 0);
                     free((void *)p.second);
@@ -84,7 +135,7 @@ void HookAfterBipedDtor(uint64_t, uint64_t, uint64_t) {
 void Clear3DHook(RE::BipedAnim * bipedanim, uint64_t arg2, uint64_t arg3) {
     std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
     auto biped_clear_3d =
-    (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212560).address());
+		(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
     biped_clear_3d(bipedanim,arg2,arg3);
     if (BipedAnimToExtraWorn.contains(bipedanim)) {
         for (auto p : BipedAnimToExtraWorn[bipedanim]) {
@@ -101,9 +152,9 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
         if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
             return orig_preparebiped_fn(armor, race, bipedanim_sptr, param_4);
         }
-        auto biped_equip_finish=(void (*)(RE::BipedAnim *, uint64_t, uint64_t, uint64_t,uint64_t))(REL::Offset(0x213580).address());
+        auto biped_equip_finish=(void (*)(RE::BipedAnim *, uint64_t, uint64_t, uint64_t,uint64_t))(REL::Offset(equip_biped).address());
         auto biped_clear_3d =
-            (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212560).address());
+			(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
         RE::BipedAnim * bipedanim=bipedanim_sptr->get();
         if ((bipedanim->actorRef.get()).get() && bipedanim->root != nullptr &&
                 bipedanim->actorRef.get().get()->formType == RE::FormType::ActorCharacter
@@ -121,7 +172,7 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
                     if (found == false) {
                         RE::BipedAnim *(*construct_biped)(RE::BipedAnim *, RE::Actor *, RE::NiNode *) =
                             (RE::BipedAnim *
-                             (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(0x212340).address());
+                             (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(construct_biped_offset).address());
                         RE::BipedAnim *new_biped = (RE::BipedAnim *)malloc(0x2778);
                         construct_biped(new_biped, bipedanim->actorRef.get().get()->As<RE::Actor>(), bipedanim->root);
                         new_biped->IncRef();
@@ -211,7 +262,7 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
     bool done = false;
     real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
     //auto biped_dtor_3d = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212460).address());
-    auto biped_clear_3d = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212560).address());
+	auto biped_clear_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
     if (item && item->IsArmor()) {
         if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
             if (RE::Actor* actor = (RE::Actor*)arg2) {
@@ -322,7 +373,7 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
             
             if (found == false) {
                 RE::BipedAnim *(*construct_biped)(RE::BipedAnim *, RE::Actor *, RE::NiNode *) =
-                    (RE::BipedAnim * (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(0x212340).address());
+                    (RE::BipedAnim * (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(construct_biped_offset).address());
                 RE::BipedAnim *new_biped = (RE::BipedAnim *)malloc(0x2778);
                 construct_biped(new_biped, bipedanim->actorRef.get().get()->As<RE::Actor>(), bipedanim->root);
                 new_biped->IncRef();
@@ -372,7 +423,7 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 
         if (found == false) {
             RE::BipedAnim *(*construct_biped)(RE::BipedAnim *, RE::Actor *, RE::NiNode *) =
-                (RE::BipedAnim * (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(0x212340).address());
+                (RE::BipedAnim * (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(construct_biped_offset).address());
             RE::BipedAnim *new_biped = (RE::BipedAnim *)malloc(0x2778);
             construct_biped(new_biped, bipedanim->actorRef.get().get()->As<RE::Actor>(), bipedanim->root);
             new_biped->IncRef();
@@ -428,72 +479,65 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
     return retval;
 }
 
-   
-
-
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
 	    InitializeLog();
 	    logger::info("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 	    SKSE::Init(a_skse);
 	    SKSE::AllocTrampoline(512);
-	    uint8_t *slotpatch_ptr = (uint8_t *)(REL::Offset(0x6a0b3e).address());
+	    uint8_t *slotpatch_ptr = (uint8_t *)(REL::Offset(slotpatch_offset).address());
 	    DWORD oldProtect = 0;
 	
 	    
 	
 	
 	    
-	    uintptr_t *AddWornItemVtable = (uintptr_t *)(REL::Offset(0x189db28).address());
+	    uintptr_t* AddWornItemVtable = (uintptr_t*)(REL::Offset(addwornitemvtable0).address());
 	    auto &trampoline = SKSE::GetTrampoline();
 	    orig_addwornitem_fn =
 	        (uint64_t(*)(RE::Actor *, RE::TESBoundObject *, int32_t, uint64_t, uint64_t, uint64_t))(* AddWornItemVtable);
 	    VirtualProtect((void *)AddWornItemVtable, 8, PAGE_EXECUTE_READWRITE, &oldProtect);
 	    *AddWornItemVtable = (uintptr_t)NewAddWornItem;
-	    uintptr_t *AddWornItemVtable2 = (uintptr_t *)(REL::Offset(0x18a5810).address());
+		uintptr_t* AddWornItemVtable2 = (uintptr_t*)(REL::Offset(addwornitemvtable1).address());
 	    orig_addwornitem_fn =
 	        (uint64_t(*)(RE::Actor *, RE::TESBoundObject *, int32_t, uint64_t, uint64_t, uint64_t))(*AddWornItemVtable2);
 	    VirtualProtect((void *)AddWornItemVtable2, 8, PAGE_EXECUTE_READWRITE, &oldProtect);
 	    *AddWornItemVtable2 = (uintptr_t)NewAddWornItem;
-	    uintptr_t *AddWornItemVtable3 = (uintptr_t *)(REL::Offset(0x18abc78).address());
+		uintptr_t* AddWornItemVtable3 = (uintptr_t*)(REL::Offset(addwornitemvtable2).address());
 	    orig_addwornitem_fn =
 	        (uint64_t(*)(RE::Actor *, RE::TESBoundObject *, int32_t, uint64_t, uint64_t, uint64_t))(*AddWornItemVtable3);
 	    VirtualProtect((void *)AddWornItemVtable3, 8, PAGE_EXECUTE_READWRITE, &oldProtect);
 	    *AddWornItemVtable3 = (uintptr_t)NewAddWornItem;
-	    trampoline.write_call<5>(REL::Offset(0x69fc1d).address(), NewAddWornItem);
-	    trampoline.write_call<5>(REL::Offset(0x69fc9d).address(), NewAddWornItem);
-	    trampoline.write_call<5>(REL::Offset(0x69fd1b).address(), NewAddWornItem);
-	    trampoline.write_call<5>(REL::Offset(0x69fdf8).address(), NewAddWornItem);
+		trampoline.write_call<5>(REL::Offset(addwornitemhook0).address(), NewAddWornItem);
+		trampoline.write_call<5>(REL::Offset(addwornitemhook1).address(), NewAddWornItem);
+		trampoline.write_call<5>(REL::Offset(addwornitemhook2).address(), NewAddWornItem);
+		trampoline.write_call<5>(REL::Offset(addwornitemhook3).address(), NewAddWornItem);
 	    VirtualProtect((void *)slotpatch_ptr, 6, PAGE_EXECUTE_READWRITE, &oldProtect);
 	    slotpatch_ptr[0x0] = 0x48;
 	    slotpatch_ptr[0x1] = 0xe9;
-	    VirtualProtect((void *)REL::Offset(0x2124b4).address(), 12, PAGE_EXECUTE_READWRITE, &oldProtect);
-	    uint8_t *ret_from_bipedanim_dtor = (uint8_t*)REL::Offset(0x2124b4).address();
+		VirtualProtect((void*)REL::Offset(ret_from_bipedanim_dtor_offset).address(), 12, PAGE_EXECUTE_READWRITE, &oldProtect);
+		uint8_t* ret_from_bipedanim_dtor = (uint8_t*)REL::Offset(ret_from_bipedanim_dtor_offset).address();
 	    ret_from_bipedanim_dtor[1] = 0xe8;
-	    orig_unequip_all_fn = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(0x212560).address());
-	    trampoline.write_branch<5>((REL::Offset(0x2124b5).address()), HookAfterBipedDtor);
-	    trampoline.write_call<5>((REL::Offset(0x212472).address()), UnequipAllBipedDtor);
+	    orig_unequip_all_fn = (void (*)(RE::BipedAnim *, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
+		trampoline.write_branch<5>((REL::Offset(ret_from_bipedanim_dtor_offset+1).address()), HookAfterBipedDtor);
+		trampoline.write_call<5>((REL::Offset(call_unequipall_from_dtor_offset).address()), UnequipAllBipedDtor);
 	    ret_from_bipedanim_dtor[0] = 0x90;
 
 	    orig_preparebiped_fn =
 	        (void (*)(RE::TESObjectARMO * armor, RE::TESRace * race, RE::BSTSmartPointer<RE::BipedAnim> * bipedanim_sptr,
-	                  uint64_t param_4))(REL::Offset(0x279320).address());
-	    trampoline.write_call<5>(REL::Offset(0x3be42e).address(), PrepareEquipBiped);
-	    trampoline.write_call<5>(REL::Offset(0x3bd368).address(), PrepareEquipBiped);
-	    trampoline.write_call<5>(REL::Offset(0x3bd2c2).address(), PrepareEquipBiped);
-	    trampoline.write_call<5>(REL::Offset(0x2131b9).address(), PrepareEquipBiped);
-	
+	                  uint64_t param_4))(REL::Offset(init_worn_armor).address());
+		
+		trampoline.write_call<5>(REL::Offset(prepare_equip_biped_hook0).address(), PrepareEquipBiped);
+		trampoline.write_call<5>(REL::Offset(prepare_equip_biped_hook1).address(), PrepareEquipBiped);
+		trampoline.write_call<5>(REL::Offset(prepare_equip_biped_hook2).address(), PrepareEquipBiped);
+		trampoline.write_call<5>(REL::Offset(prepare_equip_biped_hook3).address(), PrepareEquipBiped);
 	    real_unequip_fn = (void (*)(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5
-	                                ))(REL::Offset(0x6cc810).address());
-	    trampoline.write_call<5>(REL::Offset(0x6ca1c9).address(),UnequipHook);
+	                                ))(REL::Offset(real_unequip).address());
+	    trampoline.write_call<5>(REL::Offset(unequip_hook).address(),UnequipHook);
+		for (uint64_t offset : clear_3d_hooks) {
+			trampoline.write_call<5>(REL::Offset(offset).address(), Clear3DHook);
+		}
         
-        trampoline.write_call<5>(REL::Offset(0x726f7e).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0x726fe8).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0x727036).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0x952f58).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0xa0c76f).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0x6870cc).address(),Clear3DHook);
-        trampoline.write_call<5>(REL::Offset(0x2136aa).address(),Clear3DHook);
 	    return true;
 }
 
