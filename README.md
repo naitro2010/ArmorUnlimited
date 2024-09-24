@@ -1,6 +1,6 @@
-# CommonLibSSE-NG Plugin Template
+# ArmorUnlimited Alpha based on CommonLibSSE-NG Plugin Template
 
-Template for building SKSE plugins using the NG branch of CommonLibVR.  
+ArmorUnlimited Plugin for Skyrim AE 1.6.1170
 
 ## Requirements
 
