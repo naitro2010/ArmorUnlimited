@@ -1,3 +1,4 @@
+#pragma warning( disable : 4100 4189 )
 #include "SKSE/API.h"
 #include "SKSE/Interfaces.h"
 #include "RE/N/NiSmartPointer.h"
