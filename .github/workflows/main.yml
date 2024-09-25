@@ -1,0 +1,44 @@
+name: ArmorUnlimited
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      versionString:
+        description: 'Version String'
+        type: string
+env:
+  BUILD_TYPE: Release
+  PROJECT_NAME: ArmorUnlimited
+
+jobs:
+  build-skse:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lukka/get-cmake@latest
+      
+      - name: vcpkg cache
+        uses: lukka/run-vcpkg@v11
+      
+      - name: Run CMake
+        uses: lukka/run-cmake@v10
+        with:
+          cmakeListsTxtPath: ${{ github.workspace }}/CMakeLists.txt
+          configurePreset: ALL
+          configurePresetAdditionalArgs: "['-DCMAKE_TOOLCHAIN_FILE:STRING=C:/vcpkg/scripts/buildsystems/vcpkg.cmake']"
+          buildPreset: Release
+      - name: Move binaries
+        run: |
+          cd ${{github.workspace}}/build/Release
+          mkdir artifacts
+          cd artifacts
+          move ../ArmorUnlimited.dll
+          move ../ArmorUnlimited.pdb
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with: 
+          name: ArmorUnlimited-"$(echo ${GITHUB_HEAD_REF} | tr / -)"-DLL
+          path: build/Release/artifacts
+          retention-days: 90
