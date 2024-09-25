@@ -43,6 +43,6 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with: 
-          name: ArmorUnlimited-"$(echo ${GITHUB_HEAD_REF} | tr / -)"-DLL
+          name: ArmorUnlimited-640-DLL
           path: build/Release/artifacts
           retention-days: 90
