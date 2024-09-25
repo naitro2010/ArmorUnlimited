@@ -31,7 +31,6 @@ jobs:
           cmakeListsTxtPath: ${{ github.workspace }}/CMakeLists.txt
           configurePreset: ALL
           configurePresetAdditionalArgs: "['-DCMAKE_TOOLCHAIN_FILE:STRING=C:/vcpkg/scripts/buildsystems/vcpkg.cmake']"
-          buildPreset: Release
       - name: Move binaries
         run: |
           cd ${{github.workspace}}/build/Release
