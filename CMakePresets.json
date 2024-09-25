@@ -67,5 +67,11 @@
 				"msvc"
 			]
 		}
-	]
+	],
+	"buildPresets": [
+                {
+		      "name": "ALL",
+		      "configurePreset": "ALL"
+	        }
+	]	
 }
