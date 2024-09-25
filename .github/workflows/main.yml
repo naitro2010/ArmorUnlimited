@@ -2,7 +2,7 @@ name: ArmorUnlimited
 
 on:
   push:
-    branches: ["main","dev-640"]
+    branches: ["dev-vr"]
   workflow_dispatch:
     inputs:
       versionString:
