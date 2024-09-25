@@ -2,7 +2,7 @@ name: ArmorUnlimited
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main","dev-640"]
   workflow_dispatch:
     inputs:
       versionString:
@@ -16,7 +16,10 @@ jobs:
   build-skse:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with: 
+          submodules: 'true'
       - uses: lukka/get-cmake@latest
       
       - name: vcpkg cache
