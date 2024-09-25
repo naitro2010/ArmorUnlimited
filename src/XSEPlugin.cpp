@@ -7,8 +7,8 @@
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
 //#define FOR640
-//#define FOR_VR_1_4_150
-#define FOR1170
+#define FOR_VR_1_4_150
+//#define FOR1170
 #ifdef FOR640
 static uint64_t slotpatch_offset = 0x646d4e;
 #endif
