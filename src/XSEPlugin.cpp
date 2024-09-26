@@ -5,19 +5,20 @@
 #include "REL/Relocation.h"
 #include <windows.h>
 
+
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
 //#define FOR640
 //#define FOR_VR_1_4_150
 #define FOR1170
 #ifdef FOR640
-static uint64_t slotpatch_offset = 0x646d4e;
+static uint64_t slotpatch_offset = 0x646d1b;
 #endif
 #ifdef FOR1170
-static uint64_t slotpatch_offset = 0x6a0b3e;
+static uint64_t slotpatch_offset = 0x6a0b0b;
 #endif
 #ifdef FOR_VR_1_4_150
-static uint64_t slotpatch_offset = 0x61568e;
+static uint64_t slotpatch_offset = 0x61565b;
 #endif
 #ifdef FOR640
 static uint64_t biped_1p_offset = 0x8f0;
@@ -194,7 +195,11 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
         if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
             return orig_preparebiped_fn(armor, race, bipedanim_sptr, param_4);
         }
-        auto biped_equip_finish=(void (*)(RE::BipedAnim *, uint64_t, uint64_t, uint64_t,uint64_t))(REL::Offset(equip_biped).address());
+#ifdef FOR1170
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+#else
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+#endif
         auto biped_clear_3d =
 			(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
         RE::BipedAnim * bipedanim=bipedanim_sptr->get();
@@ -285,7 +290,11 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
                                 done2 = true;
                                 //actor_raw[biped_3p_offset / 8] = (uint64_t)bipedanim;
                             }
-                            biped_equip_finish(p.second, 0, 1, 0, 0);
+#ifdef FOR1170
+							biped_equip_finish(p.second, 0, 1, 0, 0);
+#else
+							biped_equip_finish(p.second, 1.0, 0);
+#endif
                             bipedanim->DecRef();
 							bipedanim->DecRef();
                             if (done2 == true) {
