@@ -644,10 +644,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 		logger::info("Loading armorunlimited.json");
 		std::ifstream f("data\\skse\\plugins\\armorunlimited.json");
 		json data = json::parse(f);
-        if (data["allowunlimited"]) {
-			json::number_unsigned_t allowoverride = data["allowunlimited"];
-			allow_unlimited = (int)allowoverride;
-        }
+		json::number_unsigned_t allowoverride = data["allowunlimited"];
+		allow_unlimited = (int)allowoverride;
 		for (auto val : data["virtualslots"]) {
 			json::number_unsigned_t keywordFormID = val;
 			VirtualSlots.insert(RE::FormID(keywordFormID));
