@@ -4,7 +4,9 @@
 #include "RE/N/NiSmartPointer.h"
 #include "REL/Relocation.h"
 #include <windows.h>
-
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
@@ -110,7 +112,9 @@ void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::
 	spdlog::set_default_logger(std::move(log));
 	spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%t] [%s:%#] %v");
 }
-
+int allow_unlimited = 0;
+std::set<RE::FormID> VirtualSlots;
+std::map<RE::Actor*, std::map<RE::FormID, RE::TESBoundObject*>> ActorToVirtualSlotEquipment;
 std::map<RE::BipedAnim*, std::map<int,RE::BipedAnim*>> BipedAnimToExtraWorn;
 std::recursive_mutex g_bipedstate_mutex;
 void (*orig_equiparmorstuff)(uint64_t arg1,uint64_t arg2,uint64_t arg3,
@@ -208,6 +212,10 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
             ) {
             if (!BipedAnimToExtraWorn.contains(bipedanim)) {
                 BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim *>());
+            }
+			RE::Actor* actor = bipedanim->actorRef.get().get()->As<RE::Actor>();
+            if (!ActorToVirtualSlotEquipment.contains(actor)) {
+				ActorToVirtualSlotEquipment.insert(std::pair(actor, std::map<RE::FormID, RE::TESBoundObject*>()));
             }
             if (armor != nullptr) {
                 if (armor->formType == RE::FormType::Armor) {
@@ -320,10 +328,13 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
     if (item && item->IsArmor()) {
         if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
             if (RE::Actor* actor = (RE::Actor*)arg2) {
-                if (actor->IsDisabled()) {
-                    return;
-                }
+				if (actor->IsDisabled()) {
+					return;
+				}
                 if (actor->formType == RE::FormType::ActorCharacter) {
+					
+					
+					
                     if (actor->GetSkin()==armor) {
                         return;
                     }
@@ -367,7 +378,22 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
                             }
                         }
                     }
-                    
+					if (allow_unlimited == 0) {
+						if (!ActorToVirtualSlotEquipment.contains(actor)) {
+							ActorToVirtualSlotEquipment.insert(std::pair(actor, std::map<RE::FormID, RE::TESBoundObject*>()));
+						}
+						std::set<RE::FormID> ToRemove;
+						for (auto& p : ActorToVirtualSlotEquipment[actor]) {
+							if (VirtualSlots.contains(p.first)) {
+								if (p.second->formID == item->formID) {
+									ToRemove.insert(p.first);
+								}
+							}
+						}
+						for (auto templateId : ToRemove) {
+							ActorToVirtualSlotEquipment[actor].erase(templateId);
+						}
+					}
                 }
             }
         }
@@ -403,19 +429,68 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
     if (!item) {
         return 0;
     }
-    
+	
     uint64_t retval = 0;
    
     bool no1P = false;
-	if (actor)
-	{
+	bool hasExtraKeyword = false;
+	if (actor) {
 		uint64_t* actor_raw = (uint64_t*)actor;
 		if ((actor_raw[biped_3p_offset / 8] != actor_raw[biped_1p_offset / 8]) && actor_raw[biped_3p_offset / 8] != 0 && actor_raw[biped_1p_offset / 8] != 0) {
 			no1P = true;
 		}
+		if (allow_unlimited == 0) {
+			if (!ActorToVirtualSlotEquipment.contains(actor)) {
+				ActorToVirtualSlotEquipment.insert(std::pair(actor, std::map<RE::FormID, RE::TESBoundObject*>()));
+			}
+
+			if (RE::BGSKeywordForm* keywordForm = item->As<RE::BGSKeywordForm>()) {
+				for (auto keyword : keywordForm->GetKeywords()) {
+					if (VirtualSlots.contains(keyword->formID)) {
+						hasExtraKeyword = true;
+						if (ActorToVirtualSlotEquipment[actor].contains(keyword->formID)) {
+							RE::TESBoundObject* object = ActorToVirtualSlotEquipment[actor][keyword->formID];
+							ActorToVirtualSlotEquipment[actor].erase(keyword->formID);
+							if (RE::TESObjectARMO* armor = object->As<RE::TESObjectARMO>()) {
+								RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, object, nullptr, 1, armor->equipSlot, false, false, false, true);
+							}
+						}
+					}
+				}
+			}
+		}
+		if (hasExtraKeyword == false) {
+			if (actor->GetBiped1(false)) {
+				if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
+					for (auto p : BipedAnimToExtraWorn[actor->GetBiped1(false).get()]) {
+						if (RE::TESForm* ref = RE::TESForm::LookupByID(RE::FormID(p.first))) {
+							if (RE::TESObjectARMO* extrawornarmor = ref->As<RE::TESObjectARMO>()) {
+								if (!ActorToVirtualSlotEquipment[actor].contains(extrawornarmor->formID)) {
+									bool skip_unequip = false;
+									;
+									for (auto k : extrawornarmor->GetKeywords()) {
+										if (VirtualSlots.contains(k->formID)) {
+											skip_unequip = true;
+											break;
+										}
+									}
+									if (skip_unequip == true) {
+										continue;
+									}
+									if ((armor->bipedModelData.bipedObjectSlots.underlying() & extrawornarmor->bipedModelData.bipedObjectSlots.underlying()) != 0x0) {
+										RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, extrawornarmor, nullptr, 1, armor->equipSlot, false, false, false, true);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
     if (no1P == false) {
         if (actor->GetBiped1(true)) {
+
             RE::BipedAnim *bipedanim = actor->GetBiped1(true).get();
             if (!BipedAnimToExtraWorn.contains(actor->GetBiped1(true).get())) {
                 BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim *>());
@@ -500,29 +575,51 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                         actor_raw[biped_1p_offset / 8] = (uint64_t)BipedAnimToExtraWorn[actor->GetBiped1(true).get()][item->formID];
                     }
                 }*/
+				uint8_t* slotpatch_ptr = (uint8_t*)(REL::Offset(slotpatch_offset).address());
+				if (allow_unlimited == 0) {
+					if (hasExtraKeyword == false) {
+						slotpatch_ptr[0x0] = 0x0f;
+						slotpatch_ptr[0x1] = 0x84;
+					}
+				}
                 retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
-                /* if (no1P == false) {
-                    actor_raw[biped_1p_offset / 8] = (uint64_t)Biped1P;
-                }
-                actor_raw[biped_3p_offset / 8] = (uint64_t)bipedanim;*/
-                if (item->IsArmor()) {
-					
-                    if (actor->GetActorBase()) {
-                        actor->IncRefCount();
-                        item->IncRef();
-                        SKSE::GetTaskInterface()->AddTask([item, actor,actor_raw]() {
-                            if (!actor->IsDisabled()) {
-							    RE::BSTSmartPointer bipedptr((RE::BipedAnim*)actor_raw[biped_3p_offset / 8]);
-                                
-                                PrepareEquipBiped((RE::TESObjectARMO*)item, actor->GetRace(), &bipedptr,
-                                                  (uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
-                                                  
-                            }
-                            actor->DecRefCount();
-                            item->DecRef();
-                        });
-                    }
-                }
+				slotpatch_ptr[0x0] = 0x48;
+				slotpatch_ptr[0x1] = 0xe9;
+				if (retval & 0x1) {
+					if (allow_unlimited == 0) {
+						if (RE::BGSKeywordForm* keywordForm = item->As<RE::BGSKeywordForm>()) {
+							for (auto keyword : keywordForm->GetKeywords()) {
+								if (VirtualSlots.contains(keyword->formID)) {
+									//item->IncRef();
+									ActorToVirtualSlotEquipment[actor][keyword->formID] = item;
+								}
+							}
+						}
+					}
+					if (item->IsArmor()) {
+						if (actor->GetActorBase()) {
+							actor->IncRefCount();
+							item->IncRef();
+							SKSE::GetTaskInterface()->AddTask([item, actor, actor_raw]() {
+								if (!actor->IsDisabled()) {
+									RE::BSTSmartPointer bipedptr((RE::BipedAnim*)actor_raw[biped_3p_offset / 8]);
+
+									PrepareEquipBiped((RE::TESObjectARMO*)item, actor->GetRace(), &bipedptr,
+										(uint64_t)actor->GetActorBase()->actorData.actorBaseFlags.get() & 1);
+								}
+								actor->DecRefCount();
+								item->DecRef();
+							});
+						}
+					}
+				} else {
+					if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
+						RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, item, nullptr, 1, armor->equipSlot, false, false, false,true);
+					}
+				}
+				
+				
+                
                 if (no1P == true) {
 
                 }
@@ -544,6 +641,17 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	    logger::info("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 	    SKSE::Init(a_skse);
 	    SKSE::AllocTrampoline(512);
+		logger::info("Loading armorunlimited.json");
+		std::ifstream f("data\\skse\\plugins\\armorunlimited.json");
+		json data = json::parse(f);
+        if (data["allowunlimited"]) {
+			json::number_unsigned_t allowoverride = data["allowunlimited"];
+			allow_unlimited = (int)allowoverride;
+        }
+		for (auto val : data["virtualslots"]) {
+			json::number_unsigned_t keywordFormID = val;
+			VirtualSlots.insert(RE::FormID(keywordFormID));
+        }
 	    uint8_t *slotpatch_ptr = (uint8_t *)(REL::Offset(slotpatch_offset).address());
 	    DWORD oldProtect = 0;
 	
