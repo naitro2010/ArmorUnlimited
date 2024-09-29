@@ -453,7 +453,6 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 							ActorToVirtualSlotEquipment[actor].erase(keyword->formID);
 							if (RE::TESObjectARMO* armor = object->As<RE::TESObjectARMO>()) {
                                 if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, object, nullptr, 1, nullptr, false, false, true, true) == false) {
-									return false;
                                 }
 							}
 						}
@@ -481,7 +480,6 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 								}
 								if ((armor->bipedModelData.bipedObjectSlots.underlying() & extrawornarmor->bipedModelData.bipedObjectSlots.underlying()) != 0x0) {
                                     if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, extrawornarmor, nullptr, 1, nullptr, false, false, true, true) == false) {
-										return false;
                                     }
 								}
 							}
