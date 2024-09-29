@@ -452,7 +452,7 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 							RE::TESBoundObject* object = ActorToVirtualSlotEquipment[actor][keyword->formID];
 							ActorToVirtualSlotEquipment[actor].erase(keyword->formID);
 							if (RE::TESObjectARMO* armor = object->As<RE::TESObjectARMO>()) {
-                                if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, object, nullptr, 1, nullptr, false, false, true, false) == false) {
+                                if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, object, nullptr, 1, nullptr, false, false, true, true) == false) {
 									return false;
                                 }
 							}
@@ -467,25 +467,25 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 					for (auto p : BipedAnimToExtraWorn[actor->GetBiped1(false).get()]) {
 						if (RE::TESForm* ref = RE::TESForm::LookupByID(RE::FormID(p.first))) {
 							if (RE::TESObjectARMO* extrawornarmor = ref->As<RE::TESObjectARMO>()) {
-								if (!ActorToVirtualSlotEquipment[actor].contains(extrawornarmor->formID)) {
-									bool skip_unequip = false;
-									;
-									for (auto k : extrawornarmor->GetKeywords()) {
-										if (VirtualSlots.contains(k->formID)) {
-											skip_unequip = true;
-											break;
-										}
-									}
-									if (skip_unequip == true) {
-										continue;
-									}
-									if ((armor->bipedModelData.bipedObjectSlots.underlying() & extrawornarmor->bipedModelData.bipedObjectSlots.underlying()) != 0x0) {
-                                        if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, extrawornarmor, nullptr, 1, nullptr, false, false, true, false) == false) {
-											return false;
-                                        }
+								
+								bool skip_unequip = false;
+								
+								for (auto k : extrawornarmor->GetKeywords()) {
+									if (VirtualSlots.contains(k->formID)) {
+										skip_unequip = true;
+										break;
 									}
 								}
+								if (skip_unequip == true) {
+									continue;
+								}
+								if ((armor->bipedModelData.bipedObjectSlots.underlying() & extrawornarmor->bipedModelData.bipedObjectSlots.underlying()) != 0x0) {
+                                    if (RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, extrawornarmor, nullptr, 1, nullptr, false, false, true, true) == false) {
+										return false;
+                                    }
+								}
 							}
+							
 						}
 					}
 				}
@@ -589,7 +589,7 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
                 retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
 				slotpatch_ptr[0x0] = 0x48;
 				slotpatch_ptr[0x1] = 0xe9;
-				if (retval & 0x1) {
+				//if (retval & 0x1) {
 					if (allow_unlimited == 0) {
 						if (RE::BGSKeywordForm* keywordForm = item->As<RE::BGSKeywordForm>()) {
 							for (auto keyword : keywordForm->GetKeywords()) {
@@ -616,11 +616,11 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 							});
 						}
 					}
-				} else {
-					if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
-						RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, item, nullptr, 1, nullptr, false, false, true,false);
-					}
-				}
+				//} else {
+					//if (RE::TESObjectARMO* armor = item->As<RE::TESObjectARMO>()) {
+						//RE::ActorEquipManager::GetSingleton()->UnequipObject(actor, item, nullptr, 1, nullptr, false, false, true,false);
+					//}
+				//}
 				
 				
                 
