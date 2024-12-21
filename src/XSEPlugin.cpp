@@ -11,8 +11,8 @@ using json = nlohmann::json;
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
 //#define FOR640
-//#define FOR_VR_1_4_150
 #define FOR1170
+//#define FOR1170
 #ifdef FOR640
 static uint64_t slotpatch_offset = 0x646d1b;
 #endif
@@ -196,7 +196,7 @@ void PrepareEquipBiped(RE::TESObjectARMO *armor, RE::TESRace *race, RE::BSTSmart
     
 
     if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
-        if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || std::string(armor->GetFullName()).contains(" SMP ")) {
             return orig_preparebiped_fn(armor, race, bipedanim_sptr, param_4);
         }
 #ifdef FOR1170
@@ -335,7 +335,7 @@ void UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uin
 					
 					
 					
-                    if (actor->GetSkin()==armor) {
+                    if (actor->GetSkin() == armor || std::string(armor->GetFullName()).contains(" SMP ")) {
                         return;
                     }
                     bool no1P = false;
@@ -467,7 +467,7 @@ uint64_t  NewAddWornItem(RE::Actor *actor, RE::TESBoundObject *item, int32_t cou
 						if (RE::TESForm* ref = RE::TESForm::LookupByID(RE::FormID(p.first))) {
 							if (RE::TESObjectARMO* extrawornarmor = ref->As<RE::TESObjectARMO>()) {
 								
-								bool skip_unequip = false;
+								bool skip_unequip = allow_unlimited == 1;
 								
 								for (auto k : extrawornarmor->GetKeywords()) {
 									if (VirtualSlots.contains(k->formID)) {
