@@ -30,12 +30,16 @@ include(XSEPlugin)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(xbyak CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_path(DETOURS_INCLUDE_DIRS "detours/detours.h")
+find_library(DETOURS_LIBRARY detours REQUIRED)
+
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
 target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 	${CLIB_UTIL_INCLUDE_DIRS}
+	${DETOURS_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -44,6 +48,7 @@ target_link_libraries(
 	magic_enum::magic_enum
 	xbyak::xbyak
 	nlohmann_json::nlohmann_json
+	${DETOURS_LIBRARY}
 )
 
 # https://gitlab.kitware.com/cmake/cmake/-/issues/24922#note_1371990

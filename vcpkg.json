@@ -12,7 +12,8 @@
     "catch2",
     "magic-enum",
     "nlohmann-json",
-    "clib-util"
+    "clib-util",
+    "detours"
   ],
   "builtin-baseline": "83972272512ce4ede5fc3b2ba98f6468b179f192"
 }
