@@ -74,6 +74,7 @@ static uint64_t construct_biped_offset = 0x212340;
 static uint64_t biped_dtor = 0x212460;
 static uint64_t unequip_biped = 0x212730;
 static uint64_t addwornitem = 0x6a0aa0;
+static uint64_t OriginalUpdateOffset = 0x667d40;
 #endif
 #ifdef FOR_VR_1_4_150
 static uint64_t biped_1p_offset = 0xfe8;
@@ -102,6 +103,7 @@ static uint64_t init_worn_armor_addon = 0x2383a0;
 static uint64_t addwornitem = 0x6155f0;
 
 #endif
+void* OriginalUpdatePtr = nullptr;
 void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::level::info)
 {
 #ifndef NDEBUG
@@ -233,6 +235,7 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 	if (actor != nullptr) {
+		if (GetBiped1_fn == nullptr)
 		{
 			uintptr_t** vtable_ptr = (uintptr_t**)actor;
 			uintptr_t* vtable = *vtable_ptr;
@@ -318,7 +321,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
 	
     if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
-			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(32)));
+			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
 		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
 			
@@ -353,7 +356,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
         auto biped_clear_3d =
 			(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
         RE::BipedAnim * bipedanim=bipedanim_sptr->get();
-
+		RE::BipedAnim * new_biped=nullptr;
         if ((bipedanim->actorRef.get()).get() && bipedanim->root != nullptr &&
                 bipedanim->actorRef.get().get()->formType == RE::FormType::ActorCharacter
             ) {
@@ -376,7 +379,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
                         RE::BipedAnim *(*construct_biped)(RE::BipedAnim *, RE::Actor *, RE::NiNode *) =
                             (RE::BipedAnim *
                              (*)(RE::BipedAnim *, RE::Actor *, RE::NiNode *))(REL::Offset(construct_biped_offset).address());
-                        RE::BipedAnim *new_biped = (RE::BipedAnim *)malloc(0x2778);
+                        new_biped = (RE::BipedAnim *)malloc(0x2778);
                         construct_biped(new_biped, bipedanim->actorRef.get().get()->As<RE::Actor>(), bipedanim->root);
                         new_biped->IncRef();
 						new_biped->IncRef();
@@ -388,9 +391,24 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
                     if (BipedAnimToExtraWorn[bipedanim][armor->formID&0xFFFFFFFF] != nullptr) {
                         std::pair p(armor->formID & 0xFFFFFFFF,
                                     BipedAnimToExtraWorn[bipedanim][armor->formID & 0xFFFFFFFF]);
-						    if (p.second != nullptr) {
+						
+						    if (new_biped == nullptr) {
+								new_biped = p.second;
+								for (int slot = 0; slot < 0x2a; slot++) {
+									if (ExtraWornSlotMasks[actor][slot] > 0) {
+										ExtraWornSlotMasks[actor][slot] -= ((new_biped->objects[slot].addon == aa_new || new_biped->bufferedObjects[slot].addon == aa_new) ? 1 : 0);
+									}
+									if (new_biped->objects[slot].partClone != nullptr) {
+										//new_biped->root->DetachChild(new_biped->objects[slot].partClone.get());
+									} else if (new_biped->bufferedObjects[slot].partClone != nullptr) {
+										//new_biped->root->DetachChild(new_biped->bufferedObjects[slot].partClone.get());
+									}
+								}
 							    biped_clear_3d(p.second, 0, 0);
+								
+								
 						    }
+							
                             bool done2 = false;
                             bipedanim->IncRef();
 							bipedanim->IncRef();
@@ -398,16 +416,20 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
 							if ((actor_raw[biped_1p_offset / 8] != actor_raw[biped_3p_offset/8]) &&
                                 actor_raw[biped_1p_offset / 8] != 0x0 && actor_raw[biped_1p_offset / 8] == (uint64_t)bipedanim) {
                                   
-                                    RE::BSTSmartPointer new_biped(p.second);
+                                    RE::BSTSmartPointer new_bipedP(p.second);
 								    
-                                    orig_init_worn_armor_addon_fn(aa_new, armor, &new_biped, param_4);
-									for (int slot = 0; slot < 32; slot++) {
+                                    orig_init_worn_armor_addon_fn(aa_new, armor, &new_bipedP, param_4);
+									/* for (int slot = 0; slot < 32; slot++) {
 										ExtraWornSlotMasks[actor][slot] += ((p.second->objects[slot].addon == aa_new || p.second->bufferedObjects[slot].addon == aa_new) ? 1 : 0);
-									}
+										if (p.second->bufferedObjects[slot].partClone != nullptr) {
+											//p.second->root->AttachChild(p.second->bufferedObjects[slot].partClone.get());
+										}
+									}*/
 									
-									/*
+									
 								    std::set<RE::TESObjectARMA*> added_addons;
 									for (uint64_t i = 0; i < 0x2a; i++) {
+										/*
                                         if (RE::TESObjectARMA *aa = armor->GetArmorAddonByMask(
                                                 bipedanim->actorRef.get().get()->As<RE::Actor>()->GetRace(),
                                                 (RE::BIPED_MODEL::BipedObjectSlot)(1ULL << i))) {
@@ -435,14 +457,15 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
                                                 }
                                             }
 											added_addons.insert(aa);
-                                        }
-                                    }*/
+                                        }*/
+										
+                                    }
                                 
                                 done2 = true;
                             } else if (actor_raw[biped_3p_offset / 8] != 0x0 &&
                                 actor_raw[biped_3p_offset / 8] == (uint64_t)bipedanim) {
                                 
-                                RE::BSTSmartPointer new_biped(p.second);
+                                RE::BSTSmartPointer new_bipedP(p.second);
 								
                                 //orig_preparebiped_fn(armor, race, &new_biped, param_4);
 								std::set<RE::TESObjectARMA*> added_addons;
@@ -479,10 +502,8 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
                                 
                                     
                                 }*/
-								orig_init_worn_armor_addon_fn(aa_new, armor, &new_biped, param_4);
-								for (int slot = 0; slot < 32; slot++) {
-									ExtraWornSlotMasks[actor][slot] += ((p.second->objects[slot].addon == aa_new || p.second->bufferedObjects[slot].addon == aa_new) ? 1 : 0);
-								}
+								orig_init_worn_armor_addon_fn(aa_new, armor, &new_bipedP, param_4);
+								
 								
                                 done2 = true;
                                 //actor_raw[biped_3p_offset / 8] = (uint64_t)bipedanim;
@@ -492,11 +513,24 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
 							bipedanim->DecRef();
                             if (done2 == true) {
 #ifdef FOR1170
-								biped_equip_finish(p.second, 0, 1, 0, 0);
+								biped_equip_finish(new_biped, 0, 1, 0, 0);
 #else
-								biped_equip_finish(p.second, 1.0, 0);
+								biped_equip_finish(new_biped, 1.0, 0);
 #endif
-								for (uint32_t i = 0x0; i < 32; i++) {
+								for (int slot = 0; slot < 0x2a; slot++) {
+									ExtraWornSlotMasks[actor][slot] += ((new_biped->objects[slot].addon == aa_new || new_biped->bufferedObjects[slot].addon == aa_new) ? 1 : 0);
+									if (new_biped->objects[slot].partClone != nullptr) {
+										RE::NiNode* root_node = new_biped->root;
+										RE::NiAVObject* object = new_biped->objects[slot].partClone.get();
+
+										//new_biped->root->AttachChild(new_biped->objects[slot].partClone.get());
+									} else if (new_biped->bufferedObjects[slot].partClone != nullptr) {
+										RE::NiNode* root_node = new_biped->root;
+										RE::NiAVObject* object = new_biped->bufferedObjects[slot].partClone.get();
+										//new_biped->root->AttachChild(new_biped->bufferedObjects[slot].partClone.get());
+									}
+								}
+								for (uint32_t i = 0x0; i < 0x2a; i++) {
 									if ((ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i]) != 0) {
 										if (bipedanim_sptr->get()->objects[i].partClone != nullptr) {
 											bipedanim_sptr->get()->objects[i].partClone->SetAppCulled(true);
@@ -519,7 +553,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new,RE::TESObjectARMO *armor, 
 
                         }
                     }
-					for (uint32_t i = 0x0; i < 32; i++) {
+					for (uint32_t i = 0x0; i < 0x2a; i++) {
 						if ((ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i]) != 0) {
 							if (bipedanim_sptr->get()->objects[i].partClone != nullptr) {
 								bipedanim_sptr->get()->objects[i].partClone->SetAppCulled(true);
@@ -896,7 +930,7 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 		if (anim == anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()) {
 			return unequip_biped_fn(anim, obj, arg3, arg4, arg5);
 		}
-		for (int slot = 0; slot < 32; slot++) {
+		for (int slot = 0; slot < 0x2a; slot++) {
 
 			if ((&anim->bufferedObjects[slot] == obj || &anim->objects[slot] == obj) && ExtraWornSlotMasks[anim->actorRef.get().get()->As<RE::Actor>()][slot] > 0) {
 				ExtraWornSlotMasks[anim->actorRef.get().get()->As<RE::Actor>()][slot] -= 1;
@@ -907,6 +941,40 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 	return unequip_biped_fn(anim, obj, arg3, arg4, arg5);
 	
 }
+
+void OnMessage(SKSE::MessagingInterface::Message* message)
+{
+	if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
+		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
+		for (auto& p : BipedAnimToExtraWorn) {
+			if (p.first != nullptr) {
+				for (auto& ap : p.second) {
+					if (ap.second != nullptr) {
+						Clear3DHook(ap.second, 0, 0);
+					}
+				}
+			}
+		}
+		BipedAnimToExtraWorn.clear();
+		ActorToVirtualSlotEquipment.clear();
+		ExtraWornSlotMasks.clear();
+	}
+}
+/* void UpdateActorHook(RE::Actor* ref, float delta, uint64_t arg3, uint64_t arg4)
+{
+	
+	void (*OriginalUpdate)(RE::TESObjectREFR*, float dt) = (void (*)(RE::TESObjectREFR* objRef, float dt))(OriginalUpdatePtr);
+	OriginalUpdate(ref, delta);
+	if (RE::Actor * actor=ref->As<RE::Actor>()) {
+		if (actor->GetBiped1(false)) {
+			if (BipedAnimToExtraWorn.contains(actor->GetBiped1(false).get())) {
+				for (auto p : BipedAnimToExtraWorn[actor->GetBiped1(false).get()]) {
+					p.second->root->UpdateDownwardPass
+				}
+			}
+		}
+	}
+}*/
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
 	    InitializeLog();
@@ -998,8 +1066,15 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)unequip_biped_fn, &UnequipBipedHook);
 		hook_worked &= (DetourTransactionCommit() == NO_ERROR);
-		
-			
+		SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
+		/* if (OriginalUpdatePtr == nullptr) {
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+			OriginalUpdatePtr = (void*)REL::Offset(OriginalUpdateOffset).address();
+
+			DetourAttach(&OriginalUpdatePtr, &UpdateActorHook);
+			DetourTransactionCommit();
+		}*/
 	    return true;
 }
 
