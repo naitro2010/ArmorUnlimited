@@ -77,6 +77,7 @@ static uint64_t addwornitem = 0x6a0aa0;
 static uint64_t OriginalUpdateOffset = 0x667d40;
 static uint64_t addwornitem_offset0 = 0x6a0e5e;
 static uint64_t addwornitem_offset1 = 0x6a0c6e;
+static uint64_t biped_inventory_update_offset = 0x3bba20;
 #endif
 #ifdef FOR_VR_1_4_150
 static uint64_t biped_1p_offset = 0xfe8;
@@ -144,6 +145,7 @@ uint64_t (*orig_addwornitem_fn)(RE::Actor* actor, RE::TESBoundObject* item, int3
 uint64_t (*real_unequip_fn)(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) = nullptr;
 uint64_t (*orig_unequip_fn)(RE::BipedAnim*, RE::BIPOBJECT*, char, uint64_t) = nullptr;
 RE::BipedAnim* (*BipedAnimconstruct)(RE::BipedAnim*, void*, void*) = nullptr;
+void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, uint64_t arg4, uint64_t arg5);
 void (*orig_equipbiped_fn)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t) = nullptr;
 void (*orig_init_worn_armor_addon_fn)(RE::TESObjectARMA* aa, RE::TESObjectARMO* armor,
 	RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, uint64_t param_4) = nullptr;
@@ -151,6 +153,8 @@ auto unequip_biped_fn = (void (*)(RE::BipedAnim*, RE::BIPOBJECT*, uint64_t, uint
 static std::atomic<uint32_t> skee_loaded = 0;
 static bool unequip_mode = true;
 void (*orig_unequip_all_fn)(RE::BipedAnim*, uint64_t, uint64_t) = nullptr;
+bool (*orig_update_3d_hook_fn)(RE::Actor* Actor) = nullptr;
+
 static RE::TESObjectARMO* current_prepared_armor = nullptr;
 static RE::BipedAnim* to_destroy_bipedanim = nullptr;
 void (*skee64_Biped1Original)(RE::Actor* actor, void* callback) = nullptr;
@@ -295,6 +299,60 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			return;
 		}
 	}
+}
+bool Update3DHook(RE::Actor* Actor)
+{
+	auto Biped3rd = Actor->GetBiped1(false);
+	auto Biped1st = Actor->GetBiped1(true);
+#ifdef FOR1170
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+#else
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+#endif
+	if (BipedAnimToExtraWorn.contains(Biped3rd.get())) {
+		for (auto ew : BipedAnimToExtraWorn[Biped3rd.get()]) {
+			if (ew.second != nullptr) {
+				for (int i = 0; i < 0x2a; i++) {
+					UnequipBipedHook(ew.second, &ew.second->objects[i], 0, 0, 0);
+				}
+				for (int i = 0; i < 0x2a; i++) {
+					UnequipBipedHook(ew.second, &ew.second->bufferedObjects[i], 0, 0, 0);
+				}
+				auto orig_init_worn_armor_fn =
+					(void (*)(RE::TESObjectARMO* armor,RE::TESRace* race, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,
+						uint64_t sex))(REL::Offset(init_worn_armor).address());
+				if (RE::TESForm* form=RE::TESForm::LookupByID(ew.first)) {
+					if (RE::TESObjectARMO* armor = form->As<RE::TESObjectARMO>()) {
+						//orig_init_worn_armor_fn(armor, Actor->GetRace(), &Biped3rd, Actor->GetActorBase()->IsFemale() ? 1 : 0);
+					}
+				}
+				
+			}
+		}
+	}
+	if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
+		for (auto ew : BipedAnimToExtraWorn[Biped1st.get()]) {
+			if (ew.second != nullptr) {
+				for (int i = 0; i < 0x2a; i++) {
+					UnequipBipedHook(ew.second, &ew.second->objects[i], 0, 0, 0);
+				}
+				for (int i = 0; i < 0x2a; i++) {
+					UnequipBipedHook(ew.second, &ew.second->bufferedObjects[i], 0, 0, 0);
+				}
+				auto orig_init_worn_armor_fn =
+					(void (*)(RE::TESObjectARMO* armor, RE::TESRace* race, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,
+						uint64_t sex))(REL::Offset(init_worn_armor).address());
+				if (RE::TESForm* form = RE::TESForm::LookupByID(ew.first)) {
+					if (RE::TESObjectARMO* armor = form->As<RE::TESObjectARMO>()) {
+						//orig_init_worn_armor_fn(armor, Actor->GetRace(), &Biped1st, Actor->GetActorBase()->IsFemale() ? 1 : 0);
+					}
+				}
+			}
+		}
+	}
+	bool retval=orig_update_3d_hook_fn(Actor);
+
+	return retval;
 }
 void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,
 	uint64_t param_4)
@@ -1088,6 +1146,11 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)unequip_biped_fn, &UnequipBipedHook);
+	hook_worked &= (DetourTransactionCommit() == NO_ERROR);
+	orig_update_3d_hook_fn=(bool(*)(RE::Actor*))REL::RelocationID(19316, 19743).address();
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)orig_update_3d_hook_fn, &Update3DHook);
 	hook_worked &= (DetourTransactionCommit() == NO_ERROR);
 	SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
 	/* if (OriginalUpdatePtr == nullptr) {
