@@ -141,7 +141,7 @@ std::recursive_mutex g_bipedstate_mutex;
 static std::recursive_mutex g_skee_mutex;
 void (*orig_equiparmorstuff)(uint64_t arg1, uint64_t arg2, uint64_t arg3,
 	uint64_t arg4, uint64_t arg5) = nullptr;
-uint64_t (*orig_equiparmor)(RE::Actor* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectREFRPtr* ItemPtr) = nullptr;
+uint64_t (*orig_equiparmor)(RE::TESActorBase* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO**) = nullptr;
 uint64_t (*orig_addwornitem_fn)(RE::Actor* actor, RE::TESBoundObject* item, int32_t count, uint64_t forceEquip, uint64_t arg4,
 	uint64_t arg5) = nullptr;
 uint64_t (*real_unequip_fn)(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) = nullptr;
@@ -425,20 +425,51 @@ bool Update3DHook(RE::Actor* Actor)
 	}
 	return retval;
 }
-uint64_t EquipArmorHook(RE::Actor* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,RE::TESObjectREFRPtr* ItemPtr)
+uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,RE::TESObjectARMO** ItemPtrPtr)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
-		if (BipedAnimToExtraWorn.contains(bipedanim_sptr->get())) {
-			if (ItemPtr->get() && ItemPtr->get()->formID && ItemPtr->get()->formType==RE::FormType::Armor) {
-				if (BipedAnimToExtraWorn[bipedanim_sptr->get()].contains(ItemPtr->get()->formID)) {
-					Clear3DHook(BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->get()->formID],1,0);
+	if (ItemPtrPtr != nullptr) {
+		RE::TESObjectARMO* ItemPtr = *ItemPtrPtr;
+		if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
+			if (BipedAnimToExtraWorn.contains(bipedanim_sptr->get())) {
+				if (ItemPtr && ItemPtr->formID && ItemPtr->formType == RE::FormType::Armor) {
+					if (BipedAnimToExtraWorn[bipedanim_sptr->get()].contains(ItemPtr->formID)) {
+						Clear3DHook(BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID], 1, 0);
+					}
 				}
 			}
 		}
 	}
-	
-	return orig_equiparmor(actor,arg2,bipedanim_sptr,ItemPtr);
+#ifdef FOR1170
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+#else
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+#endif
+	uint64_t retval=orig_equiparmor(actorBase,arg2,bipedanim_sptr,ItemPtrPtr);
+	if (ItemPtrPtr != nullptr) {
+		RE::TESObjectARMO* ItemPtr = *ItemPtrPtr;
+		if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
+			if (BipedAnimToExtraWorn.contains(bipedanim_sptr->get())) {
+				if (ItemPtr && ItemPtr->formID && ItemPtr->formType == RE::FormType::Armor) {
+					if (BipedAnimToExtraWorn[bipedanim_sptr->get()].contains(ItemPtr->formID)) {
+						if (BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID] != nullptr) {
+							biped_equip_finish(BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID], BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID]->actorRef.get()->As<RE::Actor>()->GetActorBase()->IsFemale(), 0, 0, 0);
+						}
+					}
+				}
+			}
+		}
+	}
+	/*
+	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr && bipedanim_sptr->get()->actorRef.get() != nullptr && bipedanim_sptr->get()->actorRef.get()->As<RE::Actor>() != nullptr) {
+		auto actor_handle = bipedanim_sptr->get()->actorRef.get()->As<RE::Actor>()->GetHandle();
+		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
+			if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
+				Update3DHook(actor_handle.get().get());
+			}
+		});
+	}*/
+	return retval;
 }
 void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr,
 	uint64_t param_4)
@@ -659,7 +690,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 						bipedanim->DecRef();
 						if (done2 == true) {
 #ifdef FOR1170
-							biped_equip_finish(new_biped, actor->GetActorBase()->IsFemale(), 0, 0, 0);
+							//biped_equip_finish(new_biped, actor->GetActorBase()->IsFemale(), 0, 0, 0);
 #else
 							biped_equip_finish(new_biped, actor->GetActorBase()->IsFemale() ? 1.0f:0.0f, 0);
 #endif
@@ -1213,7 +1244,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	DetourAttach(&(PVOID&)orig_addwornitem_fn, &NewAddWornItem);
 	hook_worked &= (DetourTransactionCommit() == NO_ERROR);
 	orig_equiparmor =
-		(uint64_t (*)(RE::Actor* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectREFRPtr* ItemPtr))(REL::Offset(EquipArmor_offset).address());
+		(uint64_t (*)(RE::TESActorBase* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO**))(REL::Offset(EquipArmor_offset).address());
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)orig_equiparmor, &EquipArmorHook);
