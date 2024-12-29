@@ -162,6 +162,7 @@ void Clear3DHook(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3);
 static RE::TESObjectARMO* current_prepared_armor = nullptr;
 static RE::BipedAnim* to_destroy_bipedanim = nullptr;
 void (*skee64_Biped1Original)(RE::Actor* actor, void* callback) = nullptr;
+bool Update3DHook(RE::Actor* Actor);
 void UnequipAllBipedDtor(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
@@ -312,6 +313,12 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		if (DetourTransactionCommit() != NO_ERROR) {
 			return;
 		}
+		auto actor_handle = actor->GetHandle();
+		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
+			if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
+				Update3DHook(actor_handle.get().get());
+			}
+		});
 	}
 }
 bool Update3DHook(RE::Actor* Actor)
