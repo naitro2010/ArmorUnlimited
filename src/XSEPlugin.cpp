@@ -1006,7 +1006,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 			if (p.first != nullptr) {
 				for (auto& ap : p.second) {
 					if (ap.second != nullptr) {
-						//Clear3DHook(ap.second, 1, 1);
+						Clear3DHook(ap.second, 1, 1);
 						if (ap.second->actorRef.get() != nullptr && ap.second->actorRef.get()->As<RE::Actor>() != nullptr && ap.second->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
 							//if (ap.second->root == nullptr) {
 							//	ap.second->root = p.first->root;
