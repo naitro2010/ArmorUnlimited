@@ -467,7 +467,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
-		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((armor->GetFormEditorID() != nullptr) && std::string(armor->GetFormEditorID()).starts_with("TNG_G"))) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor  || (armor->HasKeywordByEditorID("TNG_AddonMale")) || (armor->HasKeywordByEditorID("TNG_AddonFemale"))) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 				if (BipedAnimToExtraWorn.contains(bipedanim_sptr->get())) {
 					if (ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
@@ -610,7 +610,7 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 					return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 				}
 				if (actor->formType == RE::FormType::ActorCharacter) {
-					if (actor->GetSkin() == armor || ((armor->GetFormEditorID() != nullptr) && std::string(armor->GetFormEditorID()).starts_with("TNG_G"))) {
+					if (actor->GetSkin() == armor  || (armor->HasKeywordByEditorID("TNG_AddonMale")) || (armor->HasKeywordByEditorID("TNG_AddonFemale"))) {
 						return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 					}
 					bool no1P = false;
