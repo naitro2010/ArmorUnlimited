@@ -322,9 +322,8 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			return;
 		}
 	}
-	
+	/*
 	auto actor_handle = actor->GetHandle();
-	actor->IncRefCount();
 	
 	SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 		if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
@@ -333,9 +332,8 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 					Update3DHook(actor_handle.get().get());
 				}
 			
-			actor_handle.get().get()->DecRefCount();
 		}
-	});
+	});*/
 }
 bool Update3DHook(RE::Actor* Actor)
 {
@@ -789,6 +787,7 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 	}
 	uint64_t ret_code = real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 
+	/*
 	if (RE::Actor* actor = (RE::Actor*)arg2) {
 		auto actor_handle = actor->GetHandle();
 		//actor_handle.get()->IncRefCount();
@@ -802,7 +801,7 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 			}
 			//actor_handle.get()->DecRefCount();
 		});
-	}
+	}*/
 	return ret_code;
 }
 void EquipArmorStuff(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
@@ -983,6 +982,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 				}
 				auto actor_handle = actor->GetHandle();
 				//actor->IncRefCount();
+				/*
 				SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 					if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
 							if (!actor_handle.get()->IsDisabled() && actor_handle.get()->Is3DLoaded()) {
@@ -992,7 +992,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 						
 					}
 					//actor_handle.get().get()->DecRefCount();
-				});
+				});*/
 				return retval;
 			}
 		}
@@ -1000,6 +1000,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 	retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
 	auto actor_handle = actor->GetHandle();
 	//actor->IncRefCount();
+	/*
 	SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 		if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
 			
@@ -1010,7 +1011,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 			
 		}
 		//actor_handle.get().get()->DecRefCount();
-	});
+	});*/
 	return retval;
 }
 
