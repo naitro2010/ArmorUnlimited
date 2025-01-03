@@ -165,6 +165,7 @@ static RE::TESObjectARMO* current_prepared_armor = nullptr;
 static RE::BipedAnim* to_destroy_bipedanim = nullptr;
 void (*skee64_Biped1Original)(RE::Actor* actor, void* callback) = nullptr;
 std::set<RE::BipedAnim*> EquippedBipeds;
+std::set<RE::Actor*> ScheduledActors;
 bool Update3DHook(RE::Actor* Actor);
 void UnequipAllBipedDtor(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 {
@@ -216,13 +217,13 @@ void Clear3DHook(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 	if (bipedanim == nullptr) {
 		return;
 	}
-	for (int i = 0; i < 0x2a; i++) {
+	/* for (int i = 0; i < 0x2a; i++) {
 		UnequipBipedHook(bipedanim, &bipedanim->objects[i], 1, 0, 0);
 	}
 	for (int i = 0; i < 0x2a; i++) {
 		UnequipBipedHook(bipedanim, &bipedanim->bufferedObjects[i], 1, 0, 0);
-	}
-	//biped_clear_3d(bipedanim, arg2, arg3);
+	}*/
+	biped_clear_3d(bipedanim, arg2, arg3);
 	/*
 	if (BipedAnimToExtraWorn.contains(bipedanim)) {
 		for (auto p : BipedAnimToExtraWorn[bipedanim]) {
@@ -322,22 +323,25 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			return;
 		}
 	}
-	/*
-	auto actor_handle = actor->GetHandle();
-	
-	SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-		if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
-			
+	if (actor != nullptr && !ScheduledActors.contains(actor)) {
+		auto actor_handle = actor->GetHandle();
+		ScheduledActors.insert(actor);
+		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
+			if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
 				if (!actor_handle.get()->IsDisabled() && actor_handle.get()->Is3DLoaded()) {
 					Update3DHook(actor_handle.get().get());
 				}
-			
-		}
-	});*/
+			}
+		});
+	}
+	
 }
 bool Update3DHook(RE::Actor* Actor)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
+	if (Actor != nullptr && ScheduledActors.contains(Actor)) {
+		ScheduledActors.erase(Actor);
+	}
 	auto Biped3rd = Actor->GetBiped1(false);
 	auto Biped1st = Actor->GetBiped1(true);
 #ifdef FOR1170
@@ -414,6 +418,7 @@ bool Update3DHook(RE::Actor* Actor)
 	{
 		RE::BipedAnim* bipedanim = Biped1st.get();
 		if (BipedAnimToExtraWorn.contains(bipedanim)) {
+			bool doCull = false;
 			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
 				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
 					continue;
@@ -424,16 +429,26 @@ bool Update3DHook(RE::Actor* Actor)
 					if (has_slot == true) {
 						if (bipedanim->objects[slot].addon != nullptr) {
 							if (bipedanim->objects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								UnequipBipedHook(bipedanim, &bipedanim->objects[slot], 1, 0, 0);
+								doCull = true;
 							}
 						}
 
 						if (bipedanim->bufferedObjects[slot].addon != nullptr) {
 							if (bipedanim->bufferedObjects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								UnequipBipedHook(bipedanim, &bipedanim->bufferedObjects[slot], 1, 0, 0);
+								doCull = true;
 							}
 						}
 					}
+				}
+			}
+			if (doCull) {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(true);
+				}
+				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+			} else {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(false);
 				}
 			}
 		}
@@ -441,6 +456,7 @@ bool Update3DHook(RE::Actor* Actor)
 	{
 		RE::BipedAnim* bipedanim = Biped3rd.get();
 		if (BipedAnimToExtraWorn.contains(bipedanim)) {
+			bool doCull = false;
 			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
 				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
 					continue;
@@ -451,16 +467,27 @@ bool Update3DHook(RE::Actor* Actor)
 					if (has_slot == true) {
 						if (bipedanim->objects[slot].addon != nullptr) {
 							if (bipedanim->objects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								UnequipBipedHook(bipedanim, &bipedanim->objects[slot], 1, 0, 0);
+								doCull = true;
 							}
 						}
 
 						if (bipedanim->bufferedObjects[slot].addon != nullptr) {
 							if (bipedanim->bufferedObjects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								UnequipBipedHook(bipedanim, &bipedanim->bufferedObjects[slot], 1, 0, 0);
+								doCull = true;
 							}
 						}
 					}
+				}
+				
+			}
+			if (doCull) {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(true);
+				}
+				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+			} else {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(false);
 				}
 			}
 		}
@@ -469,12 +496,26 @@ bool Update3DHook(RE::Actor* Actor)
 		if (ExtraWornSlotMasks.contains(Actor)) {
 			for (int i = 0; i < 0x2a; i++) {
 				if (ExtraWornSlotMasks[Actor][i] != 0) {
-					unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+					if (Biped3rd.get()->objects[i].partClone != nullptr) {
+						Biped3rd.get()->objects[i].partClone->SetAppCulled(true);
+					}
+					//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+				} else {
+					if (Biped3rd.get()->objects[i].partClone != nullptr) {
+						Biped3rd.get()->objects[i].partClone->SetAppCulled(false);
+					}
 				}
 			}
 			for (int i = 0; i < 0x2a; i++) {
 				if (ExtraWornSlotMasks[Actor][i] != 0) {
-					unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1, 0, 0);
+					if (Biped3rd.get()->bufferedObjects[i].partClone != nullptr) {
+						Biped3rd.get()->bufferedObjects[i].partClone->SetAppCulled(true);
+					}
+					//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1, 0, 0);
+				} else {
+					if (Biped3rd.get()->bufferedObjects[i].partClone != nullptr) {
+						Biped3rd.get()->bufferedObjects[i].partClone->SetAppCulled(false);
+					}
 				}
 			}
 		}
@@ -483,12 +524,26 @@ bool Update3DHook(RE::Actor* Actor)
 		if (ExtraWornSlotMasks.contains(Actor)) {
 			for (int i = 0; i < 0x2a; i++) {
 				if (ExtraWornSlotMasks[Actor][i] != 0) {
-					unequip_biped_fn(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
+					if (Biped1st.get()->objects[i].partClone != nullptr) {
+						Biped1st.get()->objects[i].partClone->SetAppCulled(true);
+					}
+					//unequip_biped_fn(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
+				} else {
+					if (Biped1st.get()->objects[i].partClone != nullptr) {
+						Biped1st.get()->objects[i].partClone->SetAppCulled(false);
+					}
 				}
 			}
 			for (int i = 0; i < 0x2a; i++) {
 				if (ExtraWornSlotMasks[Actor][i] != 0) {
-					unequip_biped_fn(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
+					if (Biped1st.get()->bufferedObjects[i].partClone != nullptr) {
+						Biped1st.get()->bufferedObjects[i].partClone->SetAppCulled(true);
+					}
+					//unequip_biped_fn(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
+				} else {
+					if (Biped1st.get()->bufferedObjects[i].partClone != nullptr) {
+						Biped1st.get()->bufferedObjects[i].partClone->SetAppCulled(false);
+					}
 				}
 			}
 		}
