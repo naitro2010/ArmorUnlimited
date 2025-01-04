@@ -456,10 +456,16 @@ bool Update3DHook(RE::Actor* Actor)
 				if (bipedanim->objects[22].partClone != nullptr) {
 					bipedanim->objects[22].partClone->SetAppCulled(true);
 				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
+				}
 				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
 			} else {
 				if (bipedanim->objects[22].partClone != nullptr) {
 					bipedanim->objects[22].partClone->SetAppCulled(false);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
 				}
 			}
 		}
@@ -494,10 +500,16 @@ bool Update3DHook(RE::Actor* Actor)
 				if (bipedanim->objects[22].partClone != nullptr) {
 					bipedanim->objects[22].partClone->SetAppCulled(true);
 				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
+				}
 				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
 			} else {
 				if (bipedanim->objects[22].partClone != nullptr) {
 					bipedanim->objects[22].partClone->SetAppCulled(false);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
 				}
 			}
 		}
