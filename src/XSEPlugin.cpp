@@ -426,94 +426,7 @@ bool Update3DHook(RE::Actor* Actor)
 	//if (!Actor->IsDisabled() && Actor->Is3DLoaded()) {
 	retval = orig_update_3d_hook_fn(Actor);
 	//}
-	{
-		RE::BipedAnim* bipedanim = Biped1st.get();
-		if (BipedAnimToExtraWorn.contains(bipedanim)) {
-			bool doCull = false;
-			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
-				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
-					continue;
-				}
-				for (int slot = 0; slot < 0x2a; slot++) {
-					bool has_slot = BipedAnimToExtraWorn[bipedanim][p.first]->objects[slot].item != nullptr;
-					has_slot |= BipedAnimToExtraWorn[bipedanim][p.first]->bufferedObjects[slot].item != nullptr;
-					if (has_slot == true) {
-						if (bipedanim->objects[slot].addon != nullptr) {
-							if (bipedanim->objects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								doCull = true;
-							}
-						}
-
-						if (bipedanim->bufferedObjects[slot].addon != nullptr) {
-							if (bipedanim->bufferedObjects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								doCull = true;
-							}
-						}
-					}
-				}
-			}
-			if (doCull) {
-				if (bipedanim->objects[22].partClone != nullptr) {
-					bipedanim->objects[22].partClone->SetAppCulled(true);
-				}
-				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
-					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
-				}
-				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
-			} else {
-				if (bipedanim->objects[22].partClone != nullptr) {
-					bipedanim->objects[22].partClone->SetAppCulled(false);
-				}
-				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
-					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
-				}
-			}
-		}
-	}
-	{
-		RE::BipedAnim* bipedanim = Biped3rd.get();
-		if (BipedAnimToExtraWorn.contains(bipedanim)) {
-			bool doCull = false;
-			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
-				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
-					continue;
-				}
-				for (int slot = 0; slot < 0x2a; slot++) {
-					bool has_slot = BipedAnimToExtraWorn[bipedanim][p.first]->objects[slot].item != nullptr;
-					has_slot |= BipedAnimToExtraWorn[bipedanim][p.first]->bufferedObjects[slot].item != nullptr;
-					if (has_slot == true) {
-						if (bipedanim->objects[slot].addon != nullptr) {
-							if (bipedanim->objects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								doCull = true;
-							}
-						}
-
-						if (bipedanim->bufferedObjects[slot].addon != nullptr) {
-							if (bipedanim->bufferedObjects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-								doCull = true;
-							}
-						}
-					}
-				}
-			}
-			if (doCull) {
-				if (bipedanim->objects[22].partClone != nullptr) {
-					bipedanim->objects[22].partClone->SetAppCulled(true);
-				}
-				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
-					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
-				}
-				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
-			} else {
-				if (bipedanim->objects[22].partClone != nullptr) {
-					bipedanim->objects[22].partClone->SetAppCulled(false);
-				}
-				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
-					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
-				}
-			}
-		}
-	}
+	
 	if (BipedAnimToExtraWorn.contains(Biped3rd.get())) {
 		if (ExtraWornSlotMasks.contains(Actor)) {
 			for (int i = 0; i < 0x2a; i++) {
@@ -566,6 +479,70 @@ bool Update3DHook(RE::Actor* Actor)
 					if (Biped1st.get()->bufferedObjects[i].partClone != nullptr) {
 						Biped1st.get()->bufferedObjects[i].partClone->SetAppCulled(false);
 					}
+				}
+			}
+		}
+	}
+	{
+		RE::BipedAnim* bipedanim = Biped1st.get();
+		if (BipedAnimToExtraWorn.contains(bipedanim)) {
+			bool doCull = false;
+			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
+				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
+					continue;
+				}
+				bool has_slot = BipedAnimToExtraWorn[bipedanim][p.first]->objects[22].item != nullptr;
+				has_slot |= BipedAnimToExtraWorn[bipedanim][p.first]->bufferedObjects[22].item != nullptr;
+				if (has_slot == true) {
+					doCull = true;
+				}
+			}
+			if (doCull) {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(true);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
+				}
+				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+			} else {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(false);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
+				}
+			}
+		}
+	}
+	{
+		RE::BipedAnim* bipedanim = Biped3rd.get();
+		if (BipedAnimToExtraWorn.contains(bipedanim)) {
+			bool doCull = false;
+			for (auto p : BipedAnimToExtraWorn[bipedanim]) {
+				if (BipedAnimToExtraWorn[bipedanim][p.first] == nullptr) {
+					continue;
+				}
+				bool has_slot = BipedAnimToExtraWorn[bipedanim][p.first]->objects[22].item != nullptr;
+				has_slot |= BipedAnimToExtraWorn[bipedanim][p.first]->bufferedObjects[22].item != nullptr;
+				if (has_slot == true) {
+					doCull = true;
+				}
+			}
+			if (doCull) {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(true);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(true);
+				}
+				//unequip_biped_fn(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+			} else {
+				if (bipedanim->objects[22].partClone != nullptr) {
+					bipedanim->objects[22].partClone->SetAppCulled(false);
+				}
+				if (bipedanim->bufferedObjects[22].partClone != nullptr) {
+					bipedanim->bufferedObjects[22].partClone->SetAppCulled(false);
 				}
 			}
 		}
