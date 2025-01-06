@@ -288,6 +288,12 @@ const RE::BSTSmartPointer<RE::BipedAnim>* skee64_GetBiped1_ERRORS_ABOVE_THIS_CAL
 void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first(RE::Actor* actor, void* callback)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
+	uint64_t backtrace[16];
+	memset(backtrace, 0x0, 16 * sizeof(uint64_t));
+	CaptureStackBackTrace(1, 16, (PVOID*)backtrace, NULL);
+	if (backtrace[0] != skee64_base + 0x16862) {
+		return skee64_Biped1Original(actor, callback);
+	}
 	if (actor != nullptr) {
 		RE::BSTSmartPointer<RE::BipedAnim>& (*GetBiped1_fn)(RE::Actor* actor, bool firstperson) = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson)) nullptr;
 		if (GetBiped1_fn == nullptr) {
