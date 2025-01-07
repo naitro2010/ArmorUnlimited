@@ -292,9 +292,6 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 	uint64_t backtrace[16];
 	memset(backtrace, 0x0, 16 * sizeof(uint64_t));
 	CaptureStackBackTrace(1, 16, (PVOID*)backtrace, NULL);
-	if (backtrace[0] != skee64_base + 0x16862) {
-		return skee64_Biped1Original(actor, callback);
-	}
 	if (actor != nullptr) {
 		RE::BSTSmartPointer<RE::BipedAnim>& (*GetBiped1_fn)(RE::Actor* actor, bool firstperson) = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson)) nullptr;
 		if (GetBiped1_fn == nullptr) {
@@ -354,7 +351,9 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		if (DetourTransactionCommit() != NO_ERROR) {
 			return;
 		}
+		return;
 	}
+	skee64_Biped1Original(actor, callback);
 }
 bool Update3DHook(RE::Actor* Actor)
 {
