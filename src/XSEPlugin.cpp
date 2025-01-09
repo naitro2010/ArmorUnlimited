@@ -167,83 +167,6 @@ void (*skee64_Biped1Original)(RE::Actor* actor, void* callback) = nullptr;
 std::set<RE::BipedAnim*> EquippedBipeds;
 std::set<RE::Actor*> ScheduledActors;
 uint64_t skee64_base = 0x0;
-void WalkOverlays(RE::NiAVObject* CurrentObject, bool hide)
-{
-	if (RE::NiNode* node = CurrentObject->AsNode()) {
-		for (auto& obj : node->GetChildren()) {
-			if (obj.get() != nullptr) {
-				WalkOverlays(obj.get(), hide);
-			}
-		}
-	}
-	if (CurrentObject->name.contains("[Ovl")) {
-		RE::BSGeometry* geo = CurrentObject->AsGeometry();
-		if (geo != nullptr) {
-			auto geodata = geo->GetGeometryRuntimeData();
-			auto type = geo->GetType();
-			
-			if (geodata.properties[0].get() != nullptr) {
-				auto type1 = geodata.properties[0].get()->GetType();
-			}
-			if (geodata.properties[1].get() != nullptr) {
-				auto type2 = geodata.properties[1].get()->GetType();
-			}
-			if (geodata.properties[1].get() != nullptr && geodata.properties[1].get()->GetType() == RE::NiShadeProperty::Type::kShade) {
-				auto shader_prop = (RE::BSLightingShaderProperty*)(geodata.properties[1].get());
-				if (shader_prop != nullptr) {
-					shader_prop->SetupGeometry(geo);
-					shader_prop->FinishSetupGeometry(geo);
-				}
-			}
-			geo = geo;
-		}
-		return;
-	}
-	if (CurrentObject->name.contains("[SOvl")) {
-		RE::BSGeometry* geo = CurrentObject->AsGeometry();
-		if (geo != nullptr) {
-			auto geodata = geo->GetGeometryRuntimeData();
-			auto type = geo->GetType();
-			if (geodata.properties[0].get() != nullptr) {
-				auto type1 = geodata.properties[0].get()->GetType();
-			}
-			if (geodata.properties[1].get() != nullptr) {
-				auto type2 = geodata.properties[1].get()->GetType();
-			}
-			if (geodata.properties[1].get() != nullptr && geodata.properties[1].get()->GetType() == RE::NiShadeProperty::Type::kShade) {
-				auto shader_prop = (RE::BSLightingShaderProperty*)(geodata.properties[1].get());
-				if (shader_prop != nullptr) {
-					shader_prop->SetupGeometry(geo);
-					shader_prop->FinishSetupGeometry(geo);
-				}
-			}
-			geo = geo;
-		}
-		return;
-	}
-}
-class Update3DModelOverlayFix : public RE::BSTEventSink<SKSE::NiNodeUpdateEvent>
-{
-	RE::BSEventNotifyControl ProcessEvent(const SKSE::NiNodeUpdateEvent* a_event, RE::BSTEventSource<SKSE::NiNodeUpdateEvent>* a_eventSource)
-	{
-		if (a_event && a_event->reference) {
-			/*
-			uintptr_t update_overlay_object[2];
-			update_overlay_object[0] = skee64_base + 0x1e2160;
-			update_overlay_object[1] = a_event->reference->formID;
-			auto update_overlay_fn = (void (*)(uintptr_t*))(skee64_base + 0xd3810);
-			update_overlay_fn(update_overlay_object);
-			*/
-			//REL::safe_fill(skee64_base + 0xd1a80, 0xc3, 0x1);
-			//WalkOverlays(a_event->reference->GetCurrent3D(), false);
-			//
-			//WalkOverlays(a_event->reference->GetCurrent3D(), false);
-			//REL::safe_fill(skee64_base + 0xd1a80, 0x48, 0x1);
-		}
-		return RE::BSEventNotifyControl::kContinue;
-	}
-};
-//Update3DModelOverlayFix* overlayfix = nullptr;
 bool Update3DHook(RE::Actor* Actor);
 void UnequipAllBipedDtor(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 {
@@ -366,9 +289,6 @@ const RE::BSTSmartPointer<RE::BipedAnim>* skee64_GetBiped1_ERRORS_ABOVE_THIS_CAL
 void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first(RE::Actor* actor, void* callback)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-	uint64_t backtrace[16];
-	memset(backtrace, 0x0, 16 * sizeof(uint64_t));
-	CaptureStackBackTrace(1, 16, (PVOID*)backtrace, NULL);
 	if (actor != nullptr) {
 		RE::BSTSmartPointer<RE::BipedAnim>& (*GetBiped1_fn)(RE::Actor* actor, bool firstperson) = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson)) nullptr;
 		if (GetBiped1_fn == nullptr) {
@@ -629,14 +549,6 @@ bool Update3DHook(RE::Actor* Actor)
 			}
 		}
 	}
-	if (Actor != nullptr && skee64_base != 0x0)
-	{
-		uintptr_t update_overlay_object[2];
-		update_overlay_object[0] = skee64_base + 0x1e2160;
-		update_overlay_object[1] = Actor->formID;
-		auto update_overlay_fn = (void (*)(uintptr_t*))(skee64_base + 0xd3810);
-		update_overlay_fn(update_overlay_object);
-	}
 	return retval;
 }
 uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO** ItemPtrPtr)
@@ -732,9 +644,6 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 				skee_nop_address = ((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9);
 				memcpy(skee_nop_opcodes, (uint8_t*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9), 0x1d);
 				skee64_base = (uint64_t)skee64_info.lpBaseOfDll;
-				REL::safe_fill(skee64_base + 0xd3109, 0xEB, 0x1);
-				//overlayfix = new Update3DModelOverlayFix();
-				//SKSE::GetNiNodeUpdateEventSource()->AddEventSink<SKSE::NiNodeUpdateEvent>(overlayfix);
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
 				DetourAttach(&(PVOID&)skee64_Biped1Original, &skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
@@ -968,6 +877,13 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 						for (auto templateId : ToRemove) {
 							ActorToVirtualSlotEquipment[actor].erase(templateId);
 						}
+					}
+					if (actor != nullptr && skee64_base != 0x0) {
+						uintptr_t update_overlay_object[2];
+						update_overlay_object[0] = skee64_base + 0x1e2160;
+						update_overlay_object[1] = actor->formID;
+						auto update_overlay_fn = (void (*)(uintptr_t*))(skee64_base + 0xd3810);
+						update_overlay_fn(update_overlay_object);
 					}
 				}
 			}
