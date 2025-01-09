@@ -629,7 +629,7 @@ bool Update3DHook(RE::Actor* Actor)
 			}
 		}
 	}
-	if (Actor != nullptr && skee64_base != nullptr)
+	if (Actor != nullptr && skee64_base != 0x0)
 	{
 		uintptr_t update_overlay_object[2];
 		update_overlay_object[0] = skee64_base + 0x1e2160;
