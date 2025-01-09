@@ -212,6 +212,7 @@ void HookAfterBipedDtor(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t ar
 }
 void Clear3DHook(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 {
+	
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 	auto biped_clear_3d =
 		(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
@@ -879,11 +880,16 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 						}
 					}
 					if (actor != nullptr && skee64_base != 0x0) {
-						uintptr_t update_overlay_object[2];
-						update_overlay_object[0] = skee64_base + 0x1e2160;
-						update_overlay_object[1] = actor->formID;
-						auto update_overlay_fn = (void (*)(uintptr_t*))(skee64_base + 0xd3810);
-						update_overlay_fn(update_overlay_object);
+						auto actor_handle = actor->GetHandle();
+						actor_handle.get()->IncRefCount();
+						SKSE::GetTaskInterface()->AddTask([actor_handle]() {
+							uintptr_t update_overlay_object[2];
+							update_overlay_object[0] = skee64_base + 0x1e2160;
+							update_overlay_object[1] = actor_handle.get()->formID;
+							auto update_overlay_fn = (void (*)(uintptr_t*))(skee64_base + 0xd3810);
+							update_overlay_fn(update_overlay_object);
+							actor_handle.get()->DecRefCount();
+						});
 					}
 				}
 			}
