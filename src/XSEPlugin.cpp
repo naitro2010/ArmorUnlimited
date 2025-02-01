@@ -442,6 +442,9 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 	uint64_t param_4)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
+	if (!armor->IsArmor()) {
+		return orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
+	}
 	if (HMODULE handle = GetModuleHandleA("skee64")) {
 		uint32_t expected = 0;
 		if (skee_loaded.compare_exchange_strong(expected, 1) == true && expected == 0) {
