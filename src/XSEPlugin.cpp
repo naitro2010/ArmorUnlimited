@@ -340,36 +340,7 @@ bool Update3DHook(RE::Actor* Actor)
 	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
 #endif
 	
-	if (BipedAnimToExtraWorn.contains(Biped3rd.get())) {
-		for (auto &p : BipedAnimToExtraWorn[Biped3rd.get()])
-		{
-			if (p.second != nullptr) {
-				for (int i = 0; i < 0x2a; i++) {
-					UnequipBipedHook(p.second, &p.second->objects[i], 0, 0, 0);
-
-					UnequipBipedHook(p.second, &p.second->bufferedObjects[i], 0, 0, 0);
-				}
-				if (EquippedBipeds.contains(p.second)) {
-					EquippedBipeds.erase(p.second);
-				}
-			}
-
-		}
-	}
-	if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
-		for (auto& p : BipedAnimToExtraWorn[Biped1st.get()]) {
-			if (p.second != nullptr) {
-				for (int i = 0; i < 0x2a; i++) {
-					UnequipBipedHook(p.second, &p.second->objects[i], 0, 0, 0);
-
-					UnequipBipedHook(p.second, &p.second->bufferedObjects[i], 0, 0, 0);
-				}
-				if (EquippedBipeds.contains(p.second)) {
-					EquippedBipeds.erase(p.second);
-				}
-			}
-		}
-	}
+	
 	bool retval = orig_update_3d_hook_fn(Actor);
 	if (BipedAnimToExtraWorn.contains(Biped3rd.get())) {
 		for (auto& p : BipedAnimToExtraWorn[Biped3rd.get()]) {
@@ -403,13 +374,13 @@ bool Update3DHook(RE::Actor* Actor)
 	}
 	for (int i = 0; i < 0x2a; i++) {
 		if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
-			if (ExtraWornSlotMasks[Biped1st.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
+			if (ExtraWornSlotMasks.contains(Actor) && ExtraWornSlotMasks[Biped1st.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
 				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
 				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 0, 0, 0);
 			}
 		}
 		if (BipedAnimToExtraWorn.contains(Biped3rd.get())) {
-			if (ExtraWornSlotMasks[Biped3rd.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
+			if (ExtraWornSlotMasks.contains(Actor) && ExtraWornSlotMasks[Biped3rd.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
 				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 0, 0, 0);
 				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 0, 0, 0);
 			}
