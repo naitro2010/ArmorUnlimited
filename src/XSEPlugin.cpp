@@ -351,7 +351,7 @@ bool Update3DHook(RE::Actor* Actor)
 				anim->IncRef();
 				if (Actor && Actor->Is3DLoaded()) {
 					Actor->IncRefCount();
-					biped_equip_finish(anim, 0, 0, 0, 0);
+					biped_equip_finish(anim, 0, 1, 0, 0);
 					Actor->DecRefCount();
 				}
 				anim->DecRef();
@@ -370,7 +370,7 @@ bool Update3DHook(RE::Actor* Actor)
 				anim->IncRef();
 				if (Actor && Actor->Is3DLoaded()) {
 					Actor->IncRefCount();
-					biped_equip_finish(anim, 0, 0, 0, 0);
+					biped_equip_finish(anim, 0, 1, 0, 0);
 					Actor->DecRefCount();
 				}
 				anim->DecRef();
