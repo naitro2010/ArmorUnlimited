@@ -371,7 +371,7 @@ bool Update3DHook(RE::Actor* Actor)
 			anim->DecRef();
 		}
 	}
-	for (int i = 0; i < 0x2a; i++) {
+	for (int i = 0; i < 0x20; i++) {
 		if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
 			if (ExtraWornSlotMasks.contains(Actor) && ExtraWornSlotMasks[Biped1st.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
 				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
@@ -476,7 +476,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 							if (BipedAnimToExtraWorn[bipedanim_sptr->get()][p.first] == nullptr) {
 								continue;
 							}
-							for (int slot = 0; slot < 0x2a; slot++) {
+							for (int slot = 0; slot < 0x20; slot++) {
 								bool has_slot = BipedAnimToExtraWorn[bipedanim_sptr->get()][p.first]->objects[slot].item != nullptr;
 								has_slot |= BipedAnimToExtraWorn[bipedanim_sptr->get()][p.first]->bufferedObjects[slot].item != nullptr;
 								if (has_slot == true) {
@@ -496,12 +496,12 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 						}
 					}
 
-					for (int i = 0; i < 0x2a; i++) {
+					for (int i = 0; i < 0x20; i++) {
 						if (ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
 							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->objects[i], 1, 0, 0);
 						}
 					}
-					for (int i = 0; i < 0x2a; i++) {
+					for (int i = 0; i < 0x20; i++) {
 						if (ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
 							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->bufferedObjects[i], 1, 0, 0);
 						}
