@@ -324,6 +324,7 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			return;
 		}
 	}
+	
 
 
 }
@@ -904,7 +905,6 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 					}
 				}
 				auto actor_handle = actor->GetHandle();
-				actor->IncRefCount();
 				actor_handle.get().get()->IncRefCount();
 				SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 					if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
@@ -918,7 +918,6 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 	}
 	retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
 	auto actor_handle = actor->GetHandle();
-	actor->IncRefCount();
 	actor_handle.get().get()->IncRefCount();
 	SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 		if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
