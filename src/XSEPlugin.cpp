@@ -324,8 +324,6 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			return;
 		}
 	}
-	auto actor_handle = actor->GetHandle();
-	actor->IncRefCount();
 
 
 }
