@@ -323,6 +323,16 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		if (DetourTransactionCommit() != NO_ERROR) {
 			return;
 		}
+		if (actor) {
+			auto actor_handle = actor->GetHandle();
+			actor_handle.get()->IncRefCount();
+			SKSE::GetTaskInterface()->AddTask([actor_handle]() {
+				if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
+					Update3DHook(actor_handle.get().get());
+					actor_handle.get()->DecRefCount();
+				}
+			});
+		}
 	}
 }
 bool Update3DHook(RE::Actor* Actor)
