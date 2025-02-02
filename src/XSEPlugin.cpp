@@ -351,7 +351,7 @@ bool Update3DHook(RE::Actor* Actor)
 				anim->IncRef();
 				if (Actor && Actor->Is3DLoaded()) {
 					Actor->IncRefCount();
-					biped_equip_finish(anim, 0, 1, 0, 0);
+					biped_equip_finish(anim, 0, 0, 0, 0);
 					Actor->DecRefCount();
 				}
 				anim->DecRef();
@@ -370,7 +370,7 @@ bool Update3DHook(RE::Actor* Actor)
 				anim->IncRef();
 				if (Actor && Actor->Is3DLoaded()) {
 					Actor->IncRefCount();
-					biped_equip_finish(anim, 0, 1, 0, 0);
+					biped_equip_finish(anim, 0, 0, 0, 0);
 					Actor->DecRefCount();
 				}
 				anim->DecRef();
@@ -985,46 +985,50 @@ void EquipBipedHook(RE::BipedAnim* anim, uint64_t arg2, uint64_t arg3, uint64_t 
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 	if (!EquippedBipeds.contains(anim) && !BipedAnimToExtraWorn.contains(anim)) {
 		if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-			RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
-			RE::BipedAnim* B3P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(false).get();
-			if (BipedAnimToExtraWorn.contains(B3P)) {
-				for (auto& p : BipedAnimToExtraWorn[B3P]) {
-					if (anim->root == nullptr && p.second == anim) {
-						anim->root = B3P->root;
+			if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
+				RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
+				RE::BipedAnim* B3P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(false).get();
+				if (BipedAnimToExtraWorn.contains(B3P)) {
+					for (auto& p : BipedAnimToExtraWorn[B3P]) {
+						if (anim->root == nullptr && p.second == anim) {
+							anim->root = B3P->root;
+						}
 					}
 				}
-			}
-			if (BipedAnimToExtraWorn.contains(B1P) && B3P != B1P) {
-				for (auto& p : BipedAnimToExtraWorn[B1P]) {
-					if (anim->root == nullptr && p.second == anim) {
-						anim->root = B1P->root;
+				if (BipedAnimToExtraWorn.contains(B1P) && B3P != B1P) {
+					for (auto& p : BipedAnimToExtraWorn[B1P]) {
+						if (anim->root == nullptr && p.second == anim) {
+							anim->root = B1P->root;
+						}
 					}
 				}
-			}
-			biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
-			if (BipedAnimToExtraWorn.contains(B3P)) {
-				for (auto& p : BipedAnimToExtraWorn[B3P]) {
-					if (anim->root == nullptr && p.second == anim) {
-						anim->root = B3P->root;
+				biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+				if (BipedAnimToExtraWorn.contains(B3P)) {
+					for (auto& p : BipedAnimToExtraWorn[B3P]) {
+						if (anim->root == nullptr && p.second == anim) {
+							anim->root = B3P->root;
+						}
 					}
 				}
-			}
-			if (BipedAnimToExtraWorn.contains(B1P) && B3P != B1P) {
-				for (auto& p : BipedAnimToExtraWorn[B1P]) {
-					if (anim->root == nullptr && p.second == anim) {
-						anim->root = B1P->root;
+				if (BipedAnimToExtraWorn.contains(B1P) && B3P != B1P) {
+					for (auto& p : BipedAnimToExtraWorn[B1P]) {
+						if (anim->root == nullptr && p.second == anim) {
+							anim->root = B1P->root;
+						}
 					}
 				}
+				EquippedBipeds.insert(anim);
+				return;
 			}
-			EquippedBipeds.insert(anim);
-			return;
 		}
 	}
 	if (EquippedBipeds.contains(anim)) {
 		return;
 	}
 	if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-		biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+		if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
+			biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+		}
 	}
 }
 void OnMessage(SKSE::MessagingInterface::Message* message)
