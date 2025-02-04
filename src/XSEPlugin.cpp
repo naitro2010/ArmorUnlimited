@@ -358,7 +358,6 @@ bool Update3DHook(RE::Actor* Actor)
 			}
 		}
 	}
-	retval = orig_update_3d_hook_fn(Actor);
 	if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
 		for (auto& p : BipedAnimToExtraWorn[Biped1st.get()]) {
 			if (p.second == nullptr) {
@@ -378,7 +377,7 @@ bool Update3DHook(RE::Actor* Actor)
 			}
 		}
 	}
-	
+	retval = orig_update_3d_hook_fn(Actor);
 	for (int i = 0; i < 0x2a; i++) {
 		if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
 			if (ExtraWornSlotMasks.contains(Actor) && ExtraWornSlotMasks[Biped1st.get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
@@ -451,13 +450,30 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 	if (!armor->IsArmor()) {
 		return orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 	}
+	if (HMODULE handle = GetModuleHandleA("skee64")) {
+		uint32_t expected = 0;
+		if (skee_loaded.compare_exchange_strong(expected, 1) == true && expected == 0) {
+			MODULEINFO skee64_info;
+			GetModuleInformation(GetCurrentProcess(), handle, &skee64_info, sizeof(skee64_info));
 
+			uint8_t signature[] = { 0xff, 0x90, 0xf0, 0x03, 0x00, 0x00 };
+			if (memcmp(signature, (void*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950 + (uintptr_t)0x28), sizeof(signature)) == 0) {
+				skee64_Biped1Original = (void (*)(RE::Actor* actor, void* callback))((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950);
+				skee_nop_address = ((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9);
+				memcpy(skee_nop_opcodes, (uint8_t*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9), 0x1d);
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourAttach(&(PVOID&)skee64_Biped1Original, &skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
+				DetourTransactionCommit();
+			}
+		}
+	}
 
 	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
-		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetRace() && bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetRace()->skin == armor) || ((aa_new != nullptr) && ((uint32_t)aa_new->GetSlotMask() == (1 << 22)))) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((aa_new != nullptr) && ((uint32_t)aa_new->GetSlotMask() == (1 << 22)))) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 			if (BipedAnimToExtraWorn.contains(bipedanim_sptr->get())) {
 				if (ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
@@ -472,13 +488,13 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 								if (has_slot == true) {
 									if (bipedanim_sptr->get()->objects[slot].addon != nullptr) {
 										if (bipedanim_sptr->get()->objects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-											UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->objects[slot], 0, 0, 0);
+											UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->objects[slot], 1, 0, 0);
 										}
 									}
 
 									if (bipedanim_sptr->get()->bufferedObjects[slot].addon != nullptr) {
 										if (bipedanim_sptr->get()->bufferedObjects[slot].addon->GetSlotMask() == (RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary)) {
-											UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->bufferedObjects[slot], 0, 0, 0);
+											UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->bufferedObjects[slot], 1, 0, 0);
 										}
 									}
 								}
@@ -488,12 +504,12 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 
 					for (int i = 0; i < 0x2a; i++) {
 						if (ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
-							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->objects[i], 0, 0, 0);
+							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->objects[i], 1, 0, 0);
 						}
 					}
 					for (int i = 0; i < 0x2a; i++) {
 						if (ExtraWornSlotMasks[bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()][i] != 0) {
-							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->bufferedObjects[i], 0, 0, 0);
+							UnequipBipedHook(bipedanim_sptr->get(), &bipedanim_sptr->get()->bufferedObjects[i], 1, 0, 0);
 						}
 					}
 				}
@@ -629,7 +645,7 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 					return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 				}
 				if (actor->formType == RE::FormType::ActorCharacter) {
-					if (actor->GetSkin() == armor || (actor->GetRace() && actor->GetRace()->skin == armor)) {
+					if (actor->GetSkin() == armor) {
 						return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 					}
 					bool no1P = false;
@@ -1019,24 +1035,6 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 {
 	if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
 		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-		if (HMODULE handle = GetModuleHandleA("skee64")) {
-			uint32_t expected = 0;
-			if (skee_loaded.compare_exchange_strong(expected, 1) == true && expected == 0) {
-				MODULEINFO skee64_info;
-				GetModuleInformation(GetCurrentProcess(), handle, &skee64_info, sizeof(skee64_info));
-
-				uint8_t signature[] = { 0xff, 0x90, 0xf0, 0x03, 0x00, 0x00 };
-				if (memcmp(signature, (void*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950 + (uintptr_t)0x28), sizeof(signature)) == 0) {
-					skee64_Biped1Original = (void (*)(RE::Actor* actor, void* callback))((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950);
-					skee_nop_address = ((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9);
-					memcpy(skee_nop_opcodes, (uint8_t*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2ac9), 0x1d);
-					DetourTransactionBegin();
-					DetourUpdateThread(GetCurrentThread());
-					DetourAttach(&(PVOID&)skee64_Biped1Original, &skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
-					DetourTransactionCommit();
-				}
-			}
-		}
 #ifdef FOR1170
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
@@ -1048,7 +1046,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 			if (p.first != nullptr) {
 				for (auto& ap : p.second) {
 					if (ap.second != nullptr) {
-						Clear3DHook(ap.second, 1, 0);
+						Clear3DHook(ap.second, 1, 1);
 
 						if (ap.second->actorRef.get() != nullptr && ap.second->actorRef.get()->As<RE::Actor>() != nullptr && ap.second->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
 							ExtraWornAddons.erase(ap.second->actorRef.get()->As<RE::Actor>());
@@ -1073,7 +1071,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 				if (a != nullptr) {
 					auto biped_clear_3d =
 						(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
-					biped_clear_3d(a, 1, 0);
+					biped_clear_3d(a, 1, 1);
 				}
 			}
 			EquippedBipeds.clear();
@@ -1091,7 +1089,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	std::ifstream f("data\\skse\\plugins\\armorunlimited.json");
 	json data = json::parse(f);
 	json::number_unsigned_t allowoverride = data["allowunlimited"];
-	allow_unlimited = (int)allowoverride;
+	allow_unlimited = (int)1;
 	for (auto val : data["virtualslots"]) {
 		json::number_unsigned_t keywordFormID = val;
 		VirtualSlots.insert(RE::FormID(keywordFormID));
