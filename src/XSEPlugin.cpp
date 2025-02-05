@@ -450,12 +450,13 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 	if (!armor->IsArmor()) {
 		return orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 	}
-	if (HMODULE handle = GetModuleHandleA("skee64")) {
+	if (HMODULE handle = GetModuleHandleA("skee64.dll")) {
+		MODULEINFO skee64_info;
+		GetModuleInformation(GetCurrentProcess(), handle, &skee64_info, sizeof(skee64_info));
 		uint32_t expected = 0;
 		if (skee_loaded.compare_exchange_strong(expected, 1) == true && expected == 0) {
-			MODULEINFO skee64_info;
-			GetModuleInformation(GetCurrentProcess(), handle, &skee64_info, sizeof(skee64_info));
-
+			
+			logger::info("Got SKEE64 information");
 			uint8_t signature[] = { 0xff, 0x90, 0xf0, 0x03, 0x00, 0x00 };
 			if (memcmp(signature, (void*)((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950 + (uintptr_t)0x28), sizeof(signature)) == 0) {
 				skee64_Biped1Original = (void (*)(RE::Actor* actor, void* callback))((uintptr_t)skee64_info.lpBaseOfDll + (uintptr_t)0xc2950);
@@ -465,8 +466,13 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 				DetourUpdateThread(GetCurrentThread());
 				DetourAttach(&(PVOID&)skee64_Biped1Original, &skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
 				DetourTransactionCommit();
+				logger::info("SKEE64 hooked");
+			} else {
+				logger::error("Wrong SKEE64 version");
 			}
 		}
+	} else {
+		logger::error("Get SKEE64 last error {}", GetLastError());
 	}
 
 	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
