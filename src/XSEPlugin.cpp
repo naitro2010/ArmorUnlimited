@@ -360,15 +360,12 @@ bool Update3DHook(RE::Actor* Actor)
 						UnequipBipedHook(anim, &anim->bufferedObjects[i], 1, 0, 0);
 					}
 					//p.second->actorRef = Biped1st.get()->actorRef;
-					anim->root = Biped3rd.get()->root;
 				} else {
 					anim->IncRef();
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
-						anim->root = Biped3rd.get()->root;
-						biped_equip_finish(anim, 0, 0, 0, 0);
+						biped_equip_finish(anim, 1, 1, 0, 0);
 						//p.second->actorRef = Biped1st.get()->actorRef;
-						anim->root = Biped3rd.get()->root;
 						Actor->DecRefCount();
 					}
 					anim->DecRef();
@@ -376,8 +373,6 @@ bool Update3DHook(RE::Actor* Actor)
 			}
 		}
 	}
-	UpdatedBipeds.clear();
-	retval = orig_update_3d_hook_fn(Actor);
 	if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
 		for (auto anim : NewBipeds) {
 			if (anim == nullptr) {
@@ -395,15 +390,12 @@ bool Update3DHook(RE::Actor* Actor)
 						UnequipBipedHook(anim, &anim->bufferedObjects[i], 1, 0, 0);
 					}
 					//p.second->actorRef = Biped1st.get()->actorRef;
-					anim->root = Biped1st.get()->root;
 				} else {
 					anim->IncRef();
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
-						anim->root = Biped1st.get()->root;
-						biped_equip_finish(anim, 0, 0, 0, 0);
+						biped_equip_finish(anim, 1, 1, 0, 0);
 						//p.second->actorRef = Biped1st.get()->actorRef;
-						anim->root = Biped1st.get()->root;
 						Actor->DecRefCount();
 					}
 					anim->DecRef();
@@ -417,11 +409,10 @@ bool Update3DHook(RE::Actor* Actor)
 		if (anim != nullptr && anim != Biped1st.get() && anim != Biped3rd.get()) {
 			for (int i = 0; i < 0x2a; i++) {
 				if (anim->objects[i].addon != nullptr) {
-					if (anim->objects[i].addon->GetSlotMask() != RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
-						equippedmask |= (uint32_t)anim->objects[i].addon->GetSlotMask();
-					} else {
-						slot22anims.push_back(anim);
-					}
+					equippedmask |= (uint32_t)anim->objects[i].addon->GetSlotMask();
+				}
+				if (anim->objects[i].item != nullptr && anim->objects[i].item->As<RE::TESObjectARMO>() != nullptr) {
+					equippedmask |= (uint32_t)anim->objects[i].item->As<RE::TESObjectARMO>()->GetSlotMask();
 				}
 			}
 		}
@@ -429,14 +420,14 @@ bool Update3DHook(RE::Actor* Actor)
 	for (int i = 0; i < 0x20; i++) {
 		if (Biped1st != Biped3rd && Biped1st.get()) {
 			if ((equippedmask & (1 << i)) != 0) {
-				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
-				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
+				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
+				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 0, 0, 0);
 			}
 		}
 		if (Biped3rd.get()) {
 			if ((equippedmask & (1 << i)) != 0) {
-				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
-				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1, 0, 0);
+				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 0, 0, 0);
+				UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 0, 0, 0);
 			}
 		}
 		for (auto s22 : slot22anims) {
@@ -444,8 +435,8 @@ bool Update3DHook(RE::Actor* Actor)
 				continue;
 			}
 			if ((equippedmask & (1 << i)) != 0) {
-				UnequipBipedHook(s22, &s22->objects[i], 1, 0, 0);
-				UnequipBipedHook(s22, &s22->bufferedObjects[i], 1, 0, 0);
+				UnequipBipedHook(s22, &s22->objects[i], 0, 0, 0);
+				UnequipBipedHook(s22, &s22->bufferedObjects[i], 0, 0, 0);
 			}
 		}
 	}
@@ -512,7 +503,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
-		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 
 			return;
