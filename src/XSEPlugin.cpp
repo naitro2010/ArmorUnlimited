@@ -200,6 +200,9 @@ void HookAfterBipedDtor(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t ar
 					if (NewBipeds.contains(p.second)) {
 						NewBipeds.erase(p.second);
 					}
+					if (EquippedBipeds.contains(p.second)) {
+						EquippedBipeds.erase(p.second);
+					}
 					free((void*)p.second);
 				}
 				p.second = nullptr;
@@ -375,7 +378,7 @@ bool Update3DHook(RE::Actor* Actor)
 		}
 	}
 	UpdatedBipeds.clear();
-	bool retval = orig_update_3d_hook_fn(Actor);
+	retval = orig_update_3d_hook_fn(Actor);
 	if (BipedAnimToExtraWorn.contains(Biped1st.get()) && Biped1st != Biped3rd) {
 		for (auto anim : NewBipeds) {
 			if (anim == nullptr) {
@@ -672,6 +675,9 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 									if (NewBipeds.contains(p.second)) {
 										NewBipeds.erase(p.second);
 									}
+									if (EquippedBipeds.contains(p.second)) {
+										EquippedBipeds.erase(p.second);
+									}
 									free((void*)p.second);
 								}
 
@@ -698,6 +704,9 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 										BipedAnimToExtraWorn[actor->GetBiped1(true).get()].erase(item->formID);
 										if (NewBipeds.contains(p.second)) {
 											NewBipeds.erase(p.second);
+										}
+										if (EquippedBipeds.contains(p.second)) {
+											EquippedBipeds.erase(p.second);
 										}
 										free((void*)p.second);
 									}
@@ -1162,6 +1171,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 				}
 			}
 		}
+		BipedAnimToExtraWorn.clear();
 		std::set<RE::BipedAnim*> EquippedBipedsCopy = std::set<RE::BipedAnim*>(EquippedBipeds);
 		if (EquippedBipedsCopy.size() > 0) {
 			for (RE::BipedAnim* a : EquippedBipedsCopy) {
@@ -1172,6 +1182,17 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 				}
 			}
 			EquippedBipeds.clear();
+		}
+		std::set<RE::BipedAnim*> NewBipedsCopy = std::set<RE::BipedAnim*>(NewBipeds);
+		if (NewBipedsCopy.size() > 0) {
+			for (RE::BipedAnim* a : NewBipedsCopy) {
+				if (a != nullptr) {
+					auto biped_clear_3d =
+						(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
+					biped_clear_3d(a, 1, 1);
+				}
+			}
+			NewBipeds.clear();
 		}
 	}
 }
