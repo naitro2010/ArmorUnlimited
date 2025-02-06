@@ -499,7 +499,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		return orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 	}
 
-	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
+	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr && bipedanim_sptr->get()->actorRef.get().get() != nullptr) {
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
@@ -635,7 +635,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 	}
 
 	orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
-	if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
+	if (bipedanim_sptr->get()->actorRef.get().get() != nullptr && !ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 		ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 	}
 }
