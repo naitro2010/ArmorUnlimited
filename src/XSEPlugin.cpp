@@ -7,8 +7,8 @@
 #include <detours/detours.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <windows.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <windows.h>
 using json = nlohmann::json;
 
 #undef GetObject
@@ -113,7 +113,6 @@ std::map<RE::Actor*, std::set<RE::FormID>> ExtraWornAddons;
 void* OriginalUpdatePtr = nullptr;
 static void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::level::info)
 {
-
 	auto path = logger::log_directory();
 	if (!path) {
 		util::report_and_fail("Failed to find standard logging directory"sv);
@@ -429,7 +428,7 @@ bool Update3DHook(RE::Actor* Actor)
 	}
 	for (int i = 0; i < 0x20; i++) {
 		if (Biped1st != Biped3rd && Biped1st.get()) {
-			if ((equippedmask & (1<<i)) != 0) {
+			if ((equippedmask & (1 << i)) != 0) {
 				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
 				UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
 			}
@@ -509,14 +508,12 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		return orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 	}
 
-
 	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr) {
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
 		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
-			
 
 			return;
 		}
@@ -560,6 +557,24 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 					if (BipedAnimToExtraWorn[bipedanim->actorRef.get().get()->GetBiped1(false).get()].contains(
 							armor->formID)) {
 						found = true;
+						if (BipedAnimToExtraWorn[bipedanim][armor->formID & 0xFFFFFFFF] != nullptr) {
+							std::pair p(armor->formID & 0xFFFFFFFF,
+								BipedAnimToExtraWorn[bipedanim][armor->formID & 0xFFFFFFFF]);
+							auto biped_dtor_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(biped_dtor).address());
+							if (p.second != nullptr && p.second->root == nullptr) {
+								biped_clear_3d(p.second, 1, 1);
+								biped_dtor_3d(p.second, 1 ,1);
+								if (NewBipeds.contains(p.second)) {
+									NewBipeds.erase(p.second);
+								}
+								if (EquippedBipeds.contains(p.second)) {
+									EquippedBipeds.erase(p.second);
+								}
+								free((void*)p.second);
+								BipedAnimToExtraWorn[bipedanim].erase(armor->formID & 0xFFFFFFFF);
+								found = false;
+							}
+						}
 					}
 					if (found == false) {
 						RE::BipedAnim* (*construct_biped)(RE::BipedAnim*, RE::Actor*, RE::NiNode*) =
@@ -964,12 +979,11 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 		for (int slot = 0; slot < 0x2a; slot++) {
 			if ((&anim->bufferedObjects[slot] == obj || &anim->objects[slot] == obj) && ExtraWornSlotMasks[anim->actorRef.get().get()->As<RE::Actor>()][slot] > 0) {
 				RE::Actor* actor = anim->actorRef.get().get()->As<RE::Actor>();
-				
 			}
 		}
 	}
 	bool containsaddon = false;
-	for (int slot = 0; slot < 0x2a; slot++){
+	for (int slot = 0; slot < 0x2a; slot++) {
 		if (anim->objects[slot].addon != nullptr) {
 			containsaddon = true;
 			break;
@@ -1203,7 +1217,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	logger::info("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 	SKSE::Init(a_skse);
 	SKSE::AllocTrampoline(512);
-	
+
 	SKSE::GetMessagingInterface()->RegisterListener(OnMessage);
 
 	return true;
