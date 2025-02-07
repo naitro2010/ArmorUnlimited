@@ -1050,7 +1050,16 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 		}
 	}
 	bool containsaddon = false;
-
+	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
+		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
+			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+		}
+	}
+	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
+		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
+			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+		}
+	}
 	
 	unequip_biped_fn(anim, obj, arg3, arg4, arg5);
 	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
@@ -1086,6 +1095,16 @@ void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg
 				RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
 				RE::BipedAnim* B3P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(false).get();
 				if (anim != B1P && anim != B3P) {
+					if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
+						if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
+							anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+						}
+					}
+					if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
+						if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
+							anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+						}
+					}
 					biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
 					EquippedBipeds.insert(anim);
 				
