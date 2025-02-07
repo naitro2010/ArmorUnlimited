@@ -151,7 +151,7 @@ void (*orig_init_worn_armor_addon_fn)(RE::TESObjectARMA* aa, RE::TESObjectARMO* 
 	RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, uint64_t param_4) = nullptr;
 void (*orig_init_worn_armor_fn)(RE::TESObjectARMO* armor, RE::TESRace* race,
 	RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, uint64_t param_4) = nullptr;
-auto biped_equip_unhooked = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(nullptr);
+auto biped_equip_unhooked = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(nullptr);
 auto unequip_biped_fn = (void (*)(RE::BipedAnim*, RE::BIPOBJECT*, uint64_t, uint64_t, uint64_t)) nullptr;
 static std::atomic<uint32_t> skee_loaded = 0;
 static bool unequip_mode = true;
@@ -335,7 +335,7 @@ bool Update3DHook(RE::Actor* Actor)
 	auto Biped3rd = Actor->GetBiped1(false);
 	auto Biped1st = Actor->GetBiped1(true);
 #ifdef FOR1170
-	auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
 	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
 #endif
@@ -364,7 +364,7 @@ bool Update3DHook(RE::Actor* Actor)
 					anim->IncRef();
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
-						biped_equip_finish(anim, 0, 1, 0, 0);
+						biped_equip_finish(anim, Actor->GetWeight()*0.01, 1, 0, 0);
 						//p.second->actorRef = Biped1st.get()->actorRef;
 						Actor->DecRefCount();
 					}
@@ -395,7 +395,7 @@ bool Update3DHook(RE::Actor* Actor)
 						anim->IncRef();
 						if (Actor && Actor->Is3DLoaded()) {
 							Actor->IncRefCount();
-							biped_equip_finish(anim, 0, 1, 0, 0);
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01, 1, 0, 0);
 							//p.second->actorRef = Biped1st.get()->actorRef;
 							Actor->DecRefCount();
 						}
@@ -512,7 +512,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		}
 
 #ifdef FOR1170
-		auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
 #endif
@@ -1014,7 +1014,7 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 	}
 	return unequip_biped_fn(anim, obj, arg3, arg4, arg5);
 }
-void EquipBipedHook(RE::BipedAnim* anim, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
+void EquipBipedHook(RE::BipedAnim* anim, double arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 	if (!EquippedBipeds.contains(anim) && !BipedAnimToExtraWorn.contains(anim)) {
@@ -1112,7 +1112,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)orig_update_3d_hook_fn, &Update3DHook);
 		hook_worked &= (DetourTransactionCommit() == NO_ERROR);
-		biped_equip_unhooked = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+		biped_equip_unhooked = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)biped_equip_unhooked, &EquipBipedHook);
@@ -1145,7 +1145,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 	if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
 		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 #ifdef FOR1170
-		auto biped_equip_finish = (void (*)(RE::BipedAnim*, uint64_t, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
 #endif
