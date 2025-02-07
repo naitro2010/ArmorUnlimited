@@ -374,10 +374,10 @@ bool Update3DHook(RE::Actor* Actor)
 				if (anim->root == Biped3rd.get()->root) {
 					if (!UpdatedBipeds.contains(anim)) {
 						for (int i = 0; i < 0x2a; i++) {
-							UnequipBipedHook(anim, &anim->objects[i], 1, 1, 0);
+							UnequipBipedHook(anim, &anim->objects[i], 0, 0, 0);
 						}
 						for (int i = 0; i < 0x2a; i++) {
-							UnequipBipedHook(anim, &anim->bufferedObjects[i], 1, 1, 0);
+							UnequipBipedHook(anim, &anim->bufferedObjects[i], 0, 0, 0);
 						}
 						//p.second->actorRef = Biped1st.get()->actorRef;
 					} else {
@@ -386,15 +386,15 @@ bool Update3DHook(RE::Actor* Actor)
 							Actor->IncRefCount();
 #ifdef FOR1170
 							if (Actor->IsPlayer()) {
-								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
 							} else {
-								biped_equip_finish(anim, 1.0f, 0, 0, 0);
+								biped_equip_finish(anim, 1.0f, 1, 0, 0);
 							}
 #else
 							if (Actor->IsPlayer()) {
-								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
 							} else {
-								biped_equip_finish(anim, 1.0f, 0, 0, 0);
+								biped_equip_finish(anim, 1.0f, 1, 0, 0);
 							}
 #endif
 							//p.second->actorRef = Biped1st.get()->actorRef;
@@ -417,10 +417,10 @@ bool Update3DHook(RE::Actor* Actor)
 					if (anim->root == Biped1st.get()->root) {
 						if (!UpdatedBipeds.contains(anim)) {
 							for (int i = 0; i < 0x2a; i++) {
-								UnequipBipedHook(anim, &anim->objects[i], 1, 1, 0);
+								UnequipBipedHook(anim, &anim->objects[i], 0, 0, 0);
 							}
 							for (int i = 0; i < 0x2a; i++) {
-								UnequipBipedHook(anim, &anim->bufferedObjects[i], 1, 1, 0);
+								UnequipBipedHook(anim, &anim->bufferedObjects[i], 0, 0, 0);
 							}
 							//p.second->actorRef = Biped1st.get()->actorRef;
 						} else {
@@ -430,15 +430,15 @@ bool Update3DHook(RE::Actor* Actor)
 
 #ifdef FOR1170
 								if (Actor->IsPlayer()) {
-									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
 								} else {
-									biped_equip_finish(anim, 1.0f, 0, 0, 0);
+									biped_equip_finish(anim, 1.0f, 1, 0, 0);
 								}
 #else
 								if (Actor->IsPlayer()) {
-									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
 								} else {
-									biped_equip_finish(anim, 1.0f, 0, 0, 0);
+									biped_equip_finish(anim, 1.0f, 1, 0, 0);
 								}
 #endif
 								//p.second->actorRef = Biped1st.get()->actorRef;
@@ -467,14 +467,14 @@ bool Update3DHook(RE::Actor* Actor)
 		for (int i = 0; i < 0x20; i++) {
 			if (Biped1st != Biped3rd && Biped1st.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 1, 1, 0);
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 1, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 0, 0, 0);
 				}
 			}
 			if (Biped3rd.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 1, 0);
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1,1, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 0, 0, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 0,0, 0);
 				}
 			}
 			for (auto s22 : slot22anims) {
@@ -482,8 +482,8 @@ bool Update3DHook(RE::Actor* Actor)
 					continue;
 				}
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(s22, &s22->objects[i], 1, 1, 0);
-					UnequipBipedHook(s22, &s22->bufferedObjects[i], 1, 1, 0);
+					UnequipBipedHook(s22, &s22->objects[i], 0, 0, 0);
+					UnequipBipedHook(s22, &s22->bufferedObjects[i], 0, 0, 0);
 				}
 			}
 		}
