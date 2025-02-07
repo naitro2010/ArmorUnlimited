@@ -472,6 +472,7 @@ bool Update3DHook(RE::Actor* Actor)
 		}
 		return retval;
 	}
+	return 0;
 }
 uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO** ItemPtrPtr)
 {
