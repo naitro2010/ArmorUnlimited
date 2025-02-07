@@ -1082,14 +1082,25 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 			break;
 		}
 	}
-	if (EquippedBipeds.contains(anim) && containsaddon==false) {
+	if (EquippedBipeds.contains(anim)) {
 		EquippedBipeds.erase(anim);
 	}
 }
 void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-	if (!EquippedBipeds.contains(anim) && !BipedAnimToExtraWorn.contains(anim)) {
+	bool containsaddon = false;
+	for (int slot = 0; slot < 0x2a; slot++) {
+		if (anim->objects[slot].partClone != nullptr) {
+			containsaddon = true;
+			break;
+		}
+		if (anim->bufferedObjects[slot].partClone != nullptr) {
+			containsaddon = true;
+			break;
+		}
+	}
+	if (containsaddon==false && !BipedAnimToExtraWorn.contains(anim)) {
 		if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
 			if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
 				RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
@@ -1241,7 +1252,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 			if (p.first != nullptr) {
 				for (auto& ap : p.second) {
 					if (ap.second != nullptr) {
-						Clear3DHook(ap.second, 1, 1);
+						Clear3DHook(ap.second, 0, 0);
 
 						if (ap.second->actorRef.get() != nullptr && ap.second->actorRef.get()->As<RE::Actor>() != nullptr && ap.second->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
 							ExtraWornAddons.erase(ap.second->actorRef.get()->As<RE::Actor>());
@@ -1267,7 +1278,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 				if (a != nullptr) {
 					auto biped_clear_3d =
 						(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
-					biped_clear_3d(a, 1, 1);
+					biped_clear_3d(a, 0, 0);
 				}
 			}
 			EquippedBipeds.clear();
@@ -1279,7 +1290,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 					if (b != nullptr) {
 						auto biped_clear_3d =
 							(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
-						biped_clear_3d(b, 1, 1);
+						biped_clear_3d(b, 0, 0);
 					}
 				}
 			}
