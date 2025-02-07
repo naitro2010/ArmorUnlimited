@@ -384,9 +384,9 @@ bool Update3DHook(RE::Actor* Actor)
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
 #ifdef FOR1170
-						biped_equip_finish(anim, -1.0, 0, 0, 0);
+						biped_equip_finish(anim, -1.0, 1, 0, 0);
 #else
-						biped_equip_finish(anim, -1.0f, 0, 0, 0);
+						biped_equip_finish(anim, -1.0f, 1, 0, 0);
 #endif
 						//p.second->actorRef = Biped1st.get()->actorRef;
 						Actor->DecRefCount();
@@ -419,9 +419,9 @@ bool Update3DHook(RE::Actor* Actor)
 						if (Actor && Actor->Is3DLoaded()) {
 							Actor->IncRefCount();
 #ifdef FOR1170
-							biped_equip_finish(anim, -1.0, 0, 0, 0);
+							biped_equip_finish(anim, -1.0, 1, 0, 0);
 #else
-							biped_equip_finish(anim, -1.0f, 0, 0, 0);
+							biped_equip_finish(anim, -1.0f, 1, 0, 0);
 #endif
 							//p.second->actorRef = Biped1st.get()->actorRef;
 							Actor->DecRefCount();
@@ -1038,7 +1038,7 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 	}
 	
 	unequip_biped_fn(anim, obj, arg3, arg4, arg5);
-	if (EquippedBipeds.contains(anim) && containsaddon==false) {
+	if (EquippedBipeds.contains(anim)) {
 		EquippedBipeds.erase(anim);
 	}
 }
