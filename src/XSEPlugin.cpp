@@ -298,18 +298,18 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		bipedvector_idx = 0;
 		bipedVector3P.push_back(GetBiped1_fn(actor, false).get());
 		bipedVector1P.push_back(GetBiped1_fn(actor, true).get());
-		if (BipedAnimToExtraWorn.contains(GetBiped1_fn(actor, false).get())) {
-			for (auto p : BipedAnimToExtraWorn[GetBiped1_fn(actor, false).get()]) {
-				if (p.second != nullptr) {
-					bipedVector3P.push_back(p.second);
+		if (NewBipeds.contains(GetBiped1_fn(actor, false).get())) {
+			for (auto p : NewBipeds[GetBiped1_fn(actor, false).get()]) {
+				if (p != nullptr) {
+					bipedVector3P.push_back(p);
 				}
 			}
 		}
 
-		if (BipedAnimToExtraWorn.contains(GetBiped1_fn(actor, true).get())) {
-			for (auto p : BipedAnimToExtraWorn[GetBiped1_fn(actor, true).get()]) {
-				if (p.second != nullptr) {
-					bipedVector1P.push_back(p.second);
+		if (NewBipeds.contains(GetBiped1_fn(actor, true).get())) {
+			for (auto p : NewBipeds[GetBiped1_fn(actor, true).get()]) {
+				if (p != nullptr) {
+					bipedVector1P.push_back(p);
 				}
 			}
 		}
