@@ -1,8 +1,6 @@
 name: ArmorUnlimited
 
 on:
-  push:
-    branches: ["main","dev-640"]
   workflow_dispatch:
     inputs:
       versionString:
@@ -43,6 +41,6 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with: 
-          name: ArmorUnlimited-1170-DLL
+          name: ArmorUnlimited-1_5_970_DLL
           path: build/Release/artifacts
           retention-days: 90
