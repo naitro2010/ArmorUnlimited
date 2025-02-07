@@ -364,7 +364,7 @@ bool Update3DHook(RE::Actor* Actor)
 					anim->IncRef();
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
-						biped_equip_finish(anim, Actor->GetWeight()*0.01, 1, 0, 0);
+						biped_equip_finish(anim, Actor->GetWeight()*0.01, 0, 0, 0);
 						//p.second->actorRef = Biped1st.get()->actorRef;
 						Actor->DecRefCount();
 					}
@@ -395,7 +395,7 @@ bool Update3DHook(RE::Actor* Actor)
 						anim->IncRef();
 						if (Actor && Actor->Is3DLoaded()) {
 							Actor->IncRefCount();
-							biped_equip_finish(anim, Actor->GetWeight() * 0.01, 1, 0, 0);
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01, 0, 0, 0);
 							//p.second->actorRef = Biped1st.get()->actorRef;
 							Actor->DecRefCount();
 						}
@@ -1009,10 +1009,11 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 			break;
 		}
 	}
-	if (EquippedBipeds.contains(anim)) {
+	
+	unequip_biped_fn(anim, obj, arg3, arg4, arg5);
+	if (EquippedBipeds.contains(anim) && containsaddon==false) {
 		EquippedBipeds.erase(anim);
 	}
-	return unequip_biped_fn(anim, obj, arg3, arg4, arg5);
 }
 void EquipBipedHook(RE::BipedAnim* anim, double arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
 {
@@ -1022,10 +1023,12 @@ void EquipBipedHook(RE::BipedAnim* anim, double arg2, uint64_t arg3, uint64_t ar
 			if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
 				RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
 				RE::BipedAnim* B3P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(false).get();
-				if (anim != B1P && anim != B3P)
-				biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
-				EquippedBipeds.insert(anim);
-				return;
+				if (anim != B1P && anim != B3P) {
+					biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+					EquippedBipeds.insert(anim);
+				
+					return;
+				}
 			}
 		}
 	}
