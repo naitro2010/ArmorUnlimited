@@ -296,8 +296,7 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		bipedVector1P.clear();
 		bipedVector3P.clear();
 		bipedvector_idx = 0;
-		bipedVector3P.push_back(GetBiped1_fn(actor, false).get());
-		bipedVector1P.push_back(GetBiped1_fn(actor, true).get());
+		
 		if (NewBipeds.contains(GetBiped1_fn(actor, false).get())) {
 			for (auto p : NewBipeds[GetBiped1_fn(actor, false).get()]) {
 				if (p != nullptr) {
@@ -313,6 +312,8 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 				}
 			}
 		}
+		bipedVector3P.push_back(GetBiped1_fn(actor, false).get());
+		bipedVector1P.push_back(GetBiped1_fn(actor, true).get());
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 
