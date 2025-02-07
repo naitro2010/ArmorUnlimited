@@ -14,7 +14,7 @@ using json = nlohmann::json;
 #undef GetObject
 #define DLLEXPORT __declspec(dllexport)
 //#define FOR640
-#define FOR1170
+#define FOR1_5_970
 //#define FOR1170
 #ifdef FOR640
 static uint64_t slotpatch_offset = 0x646d1b;
@@ -25,6 +25,38 @@ static uint64_t slotpatch_offset = 0x6a0b0b;
 #ifdef FOR_VR_1_4_150
 static uint64_t slotpatch_offset = 0x61565b;
 #endif
+#ifdef FOR1_5_970
+static uint64_t slotpatch_offset = 0x60ca9b;
+#endif
+#ifdef FOR1_5_970
+
+
+
+
+
+
+static uint64_t addwornitemvtable0 = 0x16558f8;
+static uint64_t addwornitemvtable1 = 0x165dcf8;
+static uint64_t addwornitemvtable2 = 0x1663898;
+static uint64_t jmp_from_bipedanim_dtor_offset_vr = 0x1c60ee;
+static uint64_t call_unequipall_from_dtor_offset = 0x1c60b2;
+static uint64_t unequip_all_offset = 0x1c61a0;
+static uint64_t init_worn_armor = 0x228ad0;
+static uint64_t clear_3d_hooks[] = { 0x1c6bc4, 0x1c6efe, 0x1c70ba, 0x1cdc42, 0x5f449d, 0x5f44b8, 0x69317e, 0x6931e6, 0x693234, 0x8b1931, 0x8b199e, 0x972daf };
+static uint64_t unequip_hook = 0x6382c8;
+static uint64_t real_unequip = 0x63a6b0;
+static uint64_t equip_biped = 0x1c6f90;
+static uint64_t construct_biped_offset = 0x1c5f80;
+static uint64_t biped_dtor = 0x1c60a0;
+static uint64_t eh_vector_destructor_iterator_offset = 0x134ad68;
+static uint64_t unequip_biped = 0x1c6300;
+static uint64_t init_worn_armor_addon = 0x227070;
+static uint64_t EquipArmor_offset = 0x364350;
+static uint64_t addwornitem = 0x60ca30;
+static uint64_t biped_1p_offset = 0x8e8;
+static uint64_t biped_3p_offset = 0x260;
+static uint64_t GetActorBiped1 = 0x6a17e0;
+#endif
 #ifdef FOR640
 static uint64_t biped_1p_offset = 0x8f0;
 static uint64_t biped_3p_offset = 0x268;
@@ -32,15 +64,10 @@ static uint64_t biped_3p_offset = 0x268;
 static uint64_t addwornitemvtable0 = 0x174cdc0;
 static uint64_t addwornitemvtable1 = 0x1754ae8;
 static uint64_t addwornitemvtable2 = 0x175af28;
-static uint64_t addwornitemhooks[] = { 0x645e2d, 0x645ead, 0x645f2b, 0x646008 };
 static uint64_t ret_from_bipedanim_dtor_offset = 0x1d2fd4;
 static uint64_t call_unequipall_from_dtor_offset = 0x1d2f92;
 static uint64_t unequip_all_offset = 0x1d2480;
 static uint64_t init_worn_armor = 0x239850;
-static uint64_t prepare_equip_biped_hook0 = 0x37e8ce;
-static uint64_t prepare_equip_biped_hook1 = 0x37d808;
-static uint64_t prepare_equip_biped_hook2 = 0x37d762;
-static uint64_t prepare_equip_biped_hook3 = 0x1d3cd9;
 static uint64_t clear_3d_hooks[] = { 0x01d2f92, 0x01d41ca, 0x01daf54, 0x062d2dc, 0x062d2f7, 0x06cd14e, 0x06cd1b8, 0x06cd206, 0x08f3d18, 0x08f3d87, 0x09ae34f };
 static uint64_t unequip_hook = 0x6703c9;
 static uint64_t real_unequip = 0x672a10;
@@ -57,16 +84,12 @@ static uint64_t biped_3p_offset = 0x268;
 static uint64_t addwornitemvtable0 = 0x189db28;
 static uint64_t addwornitemvtable1 = 0x18a5810;
 static uint64_t addwornitemvtable2 = 0x18abc78;
-static uint64_t addwornitemhooks[] = { 0x69fc1d, 0x69fc9d, 0x69fd1b, 0x69fdf8 };
 static uint64_t ret_from_bipedanim_dtor_offset = 0x2124b4;
 static uint64_t call_unequipall_from_dtor_offset = 0x212472;
 static uint64_t unequip_all_offset = 0x212560;
 static uint64_t init_worn_armor = 0x279320;
 static uint64_t init_worn_armor_addon = 0x2775d0;
-static uint64_t prepare_equip_biped_hook0 = 0x3be42e;
-static uint64_t prepare_equip_biped_hook1 = 0x3bd368;
-static uint64_t prepare_equip_biped_hook2 = 0x3bd2c2;
-static uint64_t prepare_equip_biped_hook3 = 0x2131b9;
+
 static uint64_t clear_3d_hooks[] = { 0x212472, 0x2136aa, 0x21a434, 0x6870cc, 0x6870e7, 0x726f7e, 0x726fe8, 0x727036, 0x9525f8, 0x952667, 0xa0c76f };
 static uint64_t unequip_hook = 0x6ca1c9;
 static uint64_t real_unequip = 0x6cc810;
@@ -88,15 +111,10 @@ static uint64_t biped_3p_offset = 0x260;
 static uint64_t addwornitemvtable0 = 0x16ceb40;
 static uint64_t addwornitemvtable1 = 0x16d7098;
 static uint64_t addwornitemvtable2 = 0x16e24e8;
-static uint64_t addwornitemhooks[] = { 0x1d6212, 0x1d7024, 0x1d73c1, 0x1de722, 0x5fcbcd, 0x5fcbe8, 0x69c77e, 0x69c7e6, 0x69c834, 0x8df251, 0x8df2be, 0x9acc3f };
 static uint64_t jmp_from_bipedanim_dtor_offset_vr = 0x1d624e;
 static uint64_t call_unequipall_from_dtor_offset = 0x1d6212;
 static uint64_t unequip_all_offset = 0x1d6530;
 static uint64_t init_worn_armor = 0x239e00;
-static uint64_t prepare_equip_biped_hook0 = 0x1d7003;
-static uint64_t prepare_equip_biped_hook1 = 0x373fb2;
-static uint64_t prepare_equip_biped_hook2 = 0x374058;
-static uint64_t prepare_equip_biped_hook3 = 0x374e4e;
 static uint64_t clear_3d_hooks[] = { 0x1d7024, 0x1d73c1, 0x1de722, 0x5fcbcd, 0x5fcbe8, 0x69c77e, 0x69c7e6, 0x69c834 };
 static uint64_t unequip_hook = 0x6412d8;
 static uint64_t real_unequip = 0x6436c0;
@@ -107,7 +125,8 @@ static uint64_t eh_vector_destructor_iterator_offset = 0x138aa7c;
 static uint64_t unequip_biped = 0x1d6690;
 static uint64_t init_worn_armor_addon = 0x2383a0;
 static uint64_t addwornitem = 0x6155f0;
-
+static uint64_t GetActorBiped1 = 0x6c2120;
+static uint64_t EquipArmor_offset = 0x373cb0;
 #endif
 std::map<RE::Actor*, std::set<RE::FormID>> ExtraWornAddons;
 void* OriginalUpdatePtr = nullptr;
@@ -337,7 +356,7 @@ bool Update3DHook(RE::Actor* Actor)
 #ifdef FOR1170
 	auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
-	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+	auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t,uint64_t,uint64_t))(REL::Offset(equip_biped).address());
 #endif
 	auto biped_clear_3d =
 		(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
@@ -364,7 +383,11 @@ bool Update3DHook(RE::Actor* Actor)
 					anim->IncRef();
 					if (Actor && Actor->Is3DLoaded()) {
 						Actor->IncRefCount();
+#ifdef FOR1170
 						biped_equip_finish(anim, Actor->GetWeight()*0.01, 0, 0, 0);
+#else
+						biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+#endif
 						//p.second->actorRef = Biped1st.get()->actorRef;
 						Actor->DecRefCount();
 					}
@@ -395,7 +418,11 @@ bool Update3DHook(RE::Actor* Actor)
 						anim->IncRef();
 						if (Actor && Actor->Is3DLoaded()) {
 							Actor->IncRefCount();
+#ifdef FOR1170
 							biped_equip_finish(anim, Actor->GetWeight() * 0.01, 0, 0, 0);
+#else
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+#endif
 							//p.second->actorRef = Biped1st.get()->actorRef;
 							Actor->DecRefCount();
 						}
@@ -514,7 +541,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 #ifdef FOR1170
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
-		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #endif
 		auto biped_clear_3d =
 			(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
@@ -1060,14 +1087,15 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		auto& trampoline = SKSE::GetTrampoline();
 
 		VirtualProtect((void*)slotpatch_ptr, 6, PAGE_EXECUTE_READWRITE, &oldProtect);
-#ifdef FOR_VR_1_4_150
+#ifndef FOR1170
 		VirtualProtect((void*)REL::Offset(jmp_from_bipedanim_dtor_offset_vr).address(), 12, PAGE_EXECUTE_READWRITE, &oldProtect);
 		uint8_t* ret_from_bipedanim_dtor = (uint8_t*)REL::Offset(jmp_from_bipedanim_dtor_offset_vr).address();
 		orig_unequip_all_fn = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
 		trampoline.write_branch<5>((REL::Offset(jmp_from_bipedanim_dtor_offset_vr).address()), HookAfterBipedDtor);
 
 		trampoline.write_call<5>((REL::Offset(call_unequipall_from_dtor_offset).address()), UnequipAllBipedDtor);
-#else
+#endif
+#ifdef FOR1170
 		VirtualProtect((void*)REL::Offset(ret_from_bipedanim_dtor_offset).address(), 12, PAGE_EXECUTE_READWRITE, &oldProtect);
 		uint8_t* ret_from_bipedanim_dtor = (uint8_t*)REL::Offset(ret_from_bipedanim_dtor_offset).address();
 		ret_from_bipedanim_dtor[1] = 0xe8;
@@ -1120,7 +1148,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)biped_equip_unhooked, &EquipBipedHook);
 		hook_worked &= (DetourTransactionCommit() == NO_ERROR);
-
+#ifdef FOR1170
 		if (HMODULE handle = GetModuleHandleA("skee64.dll")) {
 			MODULEINFO skee64_info;
 			GetModuleInformation(GetCurrentProcess(), handle, &skee64_info, sizeof(skee64_info));
@@ -1144,13 +1172,14 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		} else {
 			logger::error("Get SKEE64 last error {}", GetLastError());
 		}
+#endif
 	}
 	if (message->type == SKSE::MessagingInterface::kPreLoadGame) {
 		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 #ifdef FOR1170
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, double, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #else
-		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t))(REL::Offset(equip_biped).address());
+		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #endif
 
 		for (auto& p : BipedAnimToExtraWorn) {
