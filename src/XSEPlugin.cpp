@@ -350,7 +350,7 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 }
 bool Update3DHook(RE::Actor* Actor)
 {
-	if (Actor != nullptr && Actor->Is3DLoaded() && Actor->IsHandleValid()) {
+	if (Actor != nullptr && Actor->Is3DLoaded()) {
 		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 		auto Biped3rd = Actor->GetBiped1(false);
 		auto Biped1st = Actor->GetBiped1(true);
@@ -363,6 +363,7 @@ bool Update3DHook(RE::Actor* Actor)
 			(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
 		UpdatedBipeds.clear();
 		bool retval = orig_update_3d_hook_fn(Actor);
+		std::set<RE::BipedAnim*> erased_bipeds;
 		if (NewBipeds.contains(Biped3rd.get())) {
 			for (auto anim : NewBipeds[Biped3rd.get()]) {
 				if (anim == nullptr) {
@@ -371,30 +372,26 @@ bool Update3DHook(RE::Actor* Actor)
 				if (anim == Biped3rd.get()) {
 					continue;
 				}
-				if (anim->root == Biped3rd.get()->root) {
+				//if (anim->root == Biped3rd.get()->root) {
 					if (!UpdatedBipeds.contains(anim)) {
-						for (int i = 0; i < 0x2a; i++) {
-							UnequipBipedHook(anim, &anim->objects[i], 0, 0, 0);
-						}
-						for (int i = 0; i < 0x2a; i++) {
-							UnequipBipedHook(anim, &anim->bufferedObjects[i], 0, 0, 0);
-						}
+						erased_bipeds.insert(anim);
+						
 						//p.second->actorRef = Biped1st.get()->actorRef;
 					} else {
 						anim->IncRef();
-						if (Actor && Actor->Is3DLoaded()) {
+						if (Actor) {
 							Actor->IncRefCount();
 #ifdef FOR1170
 							if (Actor->IsPlayer()) {
-								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 							} else {
-								biped_equip_finish(anim, 1.0f, 1, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 							}
 #else
 							if (Actor->IsPlayer()) {
-								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 							} else {
-								biped_equip_finish(anim, 1.0f, 1, 0, 0);
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 							}
 #endif
 							//p.second->actorRef = Biped1st.get()->actorRef;
@@ -402,9 +399,10 @@ bool Update3DHook(RE::Actor* Actor)
 						}
 						anim->DecRef();
 					}
-				}
+				//}
 			}
 		}
+		
 		if (Biped1st != Biped3rd) {
 			if (NewBipeds.contains(Biped1st.get())) {
 				for (auto anim : NewBipeds[Biped1st.get()]) {
@@ -414,31 +412,28 @@ bool Update3DHook(RE::Actor* Actor)
 					if (anim == Biped1st.get()) {
 						continue;
 					}
-					if (anim->root == Biped1st.get()->root) {
+					//if (anim->root == Biped1st.get()->root) {
 						if (!UpdatedBipeds.contains(anim)) {
-							for (int i = 0; i < 0x2a; i++) {
-								UnequipBipedHook(anim, &anim->objects[i], 0, 0, 0);
-							}
-							for (int i = 0; i < 0x2a; i++) {
-								UnequipBipedHook(anim, &anim->bufferedObjects[i], 0, 0, 0);
-							}
+							erased_bipeds.insert(anim);
+							
+							
 							//p.second->actorRef = Biped1st.get()->actorRef;
 						} else {
 							anim->IncRef();
-							if (Actor && Actor->Is3DLoaded()) {
+							if (Actor) {
 								Actor->IncRefCount();
 
 #ifdef FOR1170
 								if (Actor->IsPlayer()) {
-									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 								} else {
-									biped_equip_finish(anim, 1.0f, 1, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 								}
 #else
 								if (Actor->IsPlayer()) {
-									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 1, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 								} else {
-									biped_equip_finish(anim, 1.0f, 1, 0, 0);
+									biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
 								}
 #endif
 								//p.second->actorRef = Biped1st.get()->actorRef;
@@ -446,7 +441,132 @@ bool Update3DHook(RE::Actor* Actor)
 							}
 							anim->DecRef();
 						}
+					//}
+				}
+			}
+		}
+		auto ExtraWornClone = std::map<RE::BipedAnim*, std::map<int, RE::BipedAnim*>>(BipedAnimToExtraWorn);
+		for (auto anim : erased_bipeds) {
+			biped_clear_3d(anim, 1, 0);
+			auto biped_dtor_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(biped_dtor).address());
+			biped_dtor_3d(anim, 0,0);
+			free((void*)anim);
+			
+			if (NewBipeds.contains(Biped3rd.get())) {
+				RE::BipedAnim* b = Biped3rd.get();
+
+				if (ExtraWornClone.contains(b)) {
+					for (auto p : ExtraWornClone[b]) {
+						if (p.second == anim) {
+							BipedAnimToExtraWorn[b].erase(p.first);
+						}
 					}
+				}
+				if (NewBipeds[b].contains(anim)) {
+					NewBipeds[b].erase(anim);
+				}
+				if (EquippedBipeds.contains(anim)) {
+					EquippedBipeds.erase(anim);
+				}
+			}
+			ExtraWornClone = std::map<RE::BipedAnim*, std::map<int, RE::BipedAnim*>>(BipedAnimToExtraWorn);
+			if (Biped1st != Biped3rd && NewBipeds.contains(Biped1st.get())) {
+				RE::BipedAnim* b = Biped1st.get();
+				if (ExtraWornClone.contains(b)) {
+					for (auto p : ExtraWornClone[b]) {
+						if (p.second == anim) {
+							BipedAnimToExtraWorn[b].erase(p.first);
+						}
+					}
+				}
+				if (NewBipeds[b].contains(anim)) {
+					NewBipeds[b].erase(anim);
+				}
+				if (EquippedBipeds.contains(anim)) {
+					EquippedBipeds.erase(anim);
+				}
+			}
+		}
+		UpdatedBipeds.clear();
+		retval = orig_update_3d_hook_fn(Actor);
+		erased_bipeds.clear();
+		if (NewBipeds.contains(Biped3rd.get())) {
+			for (auto anim : NewBipeds[Biped3rd.get()]) {
+				if (anim == nullptr) {
+					continue;
+				}
+				if (anim == Biped3rd.get()) {
+					continue;
+				}
+				//if (anim->root == Biped3rd.get()->root) {
+				if (!UpdatedBipeds.contains(anim)) {
+					erased_bipeds.insert(anim);
+
+					//p.second->actorRef = Biped1st.get()->actorRef;
+				} else {
+					anim->IncRef();
+					if (Actor) {
+						Actor->IncRefCount();
+#ifdef FOR1170
+						if (Actor->IsPlayer()) {
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+						} else {
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+						}
+#else
+						if (Actor->IsPlayer()) {
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+						} else {
+							biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+						}
+#endif
+						//p.second->actorRef = Biped1st.get()->actorRef;
+						Actor->DecRefCount();
+					}
+					anim->DecRef();
+				}
+				//}
+			}
+		}
+
+		if (Biped1st != Biped3rd) {
+			if (NewBipeds.contains(Biped1st.get())) {
+				for (auto anim : NewBipeds[Biped1st.get()]) {
+					if (anim == nullptr) {
+						continue;
+					}
+					if (anim == Biped1st.get()) {
+						continue;
+					}
+					//if (anim->root == Biped1st.get()->root) {
+					if (!UpdatedBipeds.contains(anim)) {
+						erased_bipeds.insert(anim);
+
+						//p.second->actorRef = Biped1st.get()->actorRef;
+					} else {
+						anim->IncRef();
+						if (Actor) {
+							Actor->IncRefCount();
+
+#ifdef FOR1170
+							if (Actor->IsPlayer()) {
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+							} else {
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+							}
+#else
+							if (Actor->IsPlayer()) {
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+							} else {
+								biped_equip_finish(anim, Actor->GetWeight() * 0.01f, 0, 0, 0);
+							}
+#endif
+							//p.second->actorRef = Biped1st.get()->actorRef;
+							Actor->DecRefCount();
+						}
+						anim->DecRef();
+					}
+					//}
 				}
 			}
 		}
@@ -467,14 +587,14 @@ bool Update3DHook(RE::Actor* Actor)
 		for (int i = 0; i < 0x20; i++) {
 			if (Biped1st != Biped3rd && Biped1st.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 0, 0, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
 				}
 			}
 			if (Biped3rd.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 0, 0, 0);
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 0,0, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1,0, 0);
 				}
 			}
 			for (auto s22 : slot22anims) {
@@ -482,11 +602,12 @@ bool Update3DHook(RE::Actor* Actor)
 					continue;
 				}
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(s22, &s22->objects[i], 0, 0, 0);
-					UnequipBipedHook(s22, &s22->bufferedObjects[i], 0, 0, 0);
+					UnequipBipedHook(s22, &s22->objects[i], 1, 0, 0);
+					UnequipBipedHook(s22, &s22->bufferedObjects[i], 1, 0, 0);
 				}
 			}
 		}
+		
 		return retval;
 	}
 	return 0;
@@ -602,8 +723,8 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 								BipedAnimToExtraWorn[bipedanim][armor->formID & 0xFFFFFFFF]);
 							auto biped_dtor_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(biped_dtor).address());
 							if (p.second != nullptr && p.second->root == nullptr) {
-								biped_clear_3d(p.second, 1, 1);
-								biped_dtor_3d(p.second, 1 ,1);
+								biped_clear_3d(p.second, 1, 0);
+								biped_dtor_3d(p.second, 0 ,0);
 								if (NewBipeds.contains(bipedanim->actorRef.get().get()->GetBiped1(false).get())) {
 									NewBipeds[bipedanim->actorRef.get().get()->GetBiped1(false).get()].erase(p.second);
 								}
@@ -726,66 +847,10 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 						no1P = true;
 					}
 					if (actor->GetBiped1(false)) {
-						RE::BipedAnim* bipedanim = actor->GetBiped1(false).get();
-						if (!BipedAnimToExtraWorn.contains(actor->GetBiped1(false).get())) {
-							BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim*>());
-						}
-						bool found = false;
-						if (BipedAnimToExtraWorn[actor->GetBiped1(false).get()].contains(item->formID & 0xFFFFFFFF)) {
-							auto p = std::pair(item->formID & 0xFFFFFFFF, BipedAnimToExtraWorn[actor->GetBiped1(false).get()][item->formID & 0xFFFFFFFF]);
-
-							if ((p.first & 0xFFFFFFFF) == (item->formID & 0xFFFFFFFF)) {
-								if (p.second != nullptr) {
-									p.second->root = bipedanim->root;
-									biped_clear_3d(p.second, 1, 1);
-
-									BipedAnimToExtraWorn[actor->GetBiped1(false).get()].erase(item->formID);
-									if (NewBipeds.contains(actor->GetBiped1(false).get())) {
-										if (NewBipeds[actor->GetBiped1(false).get()].contains(p.second)) {
-											NewBipeds[actor->GetBiped1(false).get()].erase(p.second);
-										}
-									}
-									if (EquippedBipeds.contains(p.second)) {
-										EquippedBipeds.erase(p.second);
-									}
-									free((void*)p.second);
-								}
-
-								done = true;
-								found = true;
-							}
-						}
+						
 					}
 					if (no1P == false) {
-						if (actor->GetBiped1(true)) {
-							RE::BipedAnim* bipedanim = actor->GetBiped1(true).get();
-							if (!BipedAnimToExtraWorn.contains(actor->GetBiped1(true).get())) {
-								BipedAnimToExtraWorn.insert_or_assign(bipedanim, std::map<int, RE::BipedAnim*>());
-							}
-							bool found = false;
-							if (BipedAnimToExtraWorn[actor->GetBiped1(true).get()].contains(item->formID & 0xFFFFFFFF)) {
-								auto p = std::pair(item->formID & 0xFFFFFFFF, BipedAnimToExtraWorn[actor->GetBiped1(true).get()][item->formID & 0xFFFFFFFF]);
-
-								if ((p.first & 0xFFFFFFFF) == (item->formID & 0xFFFFFFFF)) {
-									if (p.second != nullptr) {
-										p.second->root = bipedanim->root;
-										biped_clear_3d(p.second, 1, 1);
-										BipedAnimToExtraWorn[actor->GetBiped1(true).get()].erase(item->formID);
-										if (NewBipeds.contains(actor->GetBiped1(true).get())) {
-											if (NewBipeds[actor->GetBiped1(true).get()].contains(p.second)) {
-												NewBipeds[actor->GetBiped1(true).get()].erase(p.second);
-											}
-										}
-										if (EquippedBipeds.contains(p.second)) {
-											EquippedBipeds.erase(p.second);
-										}
-										free((void*)p.second);
-									}
-									done = true;
-									found = true;
-								}
-							}
-						}
+						
 					}
 					if (allow_unlimited == 0) {
 						if (!ActorToVirtualSlotEquipment.contains(actor)) {
@@ -812,11 +877,11 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 
 	if (RE::Actor* actor = (RE::Actor*)arg2) {
 		auto actor_handle = actor->GetHandle();
-		actor_handle.get()->IncRefCount();
+		actor_handle.get().get()->IncRefCount();
 		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
 			if (actor_handle.get() && actor_handle.get().get() != nullptr && actor_handle.get().get()->Is3DLoaded()) {
 				Update3DHook(actor_handle.get().get());
-				actor_handle.get()->DecRefCount();
+				actor_handle.get().get()->DecRefCount();
 			}
 		});
 	}
@@ -845,7 +910,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 	uint64_t arg5)
 {
 	uint64_t retval = 0;
-	if (actor != nullptr && actor->Is3DLoaded() && actor->IsHandleValid()) {
+	if (actor != nullptr) {
 		std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
 		uint8_t* slotpatch_ptr = (uint8_t*)(REL::Offset(slotpatch_offset).address());
 
@@ -1072,37 +1137,15 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
 		}
 	}
-	for (int slot = 0; slot < 0x2a; slot++) {
-		if (anim->objects[slot].addon != nullptr) {
-			containsaddon = true;
-			break;
-		}
-		if (anim->bufferedObjects[slot].addon != nullptr) {
-			containsaddon = true;
-			break;
-		}
-	}
-	if (EquippedBipeds.contains(anim)) {
-		EquippedBipeds.erase(anim);
-	}
 }
 void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-	bool containsaddon = false;
-	for (int slot = 0; slot < 0x2a; slot++) {
-		if (anim->objects[slot].partClone != nullptr) {
-			containsaddon = true;
-			break;
-		}
-		if (anim->bufferedObjects[slot].partClone != nullptr) {
-			containsaddon = true;
-			break;
-		}
-	}
-	if (containsaddon==false && !BipedAnimToExtraWorn.contains(anim)) {
+	
+
+	if (!EquippedBipeds.contains(anim) && !BipedAnimToExtraWorn.contains(anim)) {
 		if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-			if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
+
 				RE::BipedAnim* B1P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(true).get();
 				RE::BipedAnim* B3P = anim->actorRef.get()->As<RE::Actor>()->GetBiped1(false).get();
 				if (anim != B1P && anim != B3P) {
@@ -1117,20 +1160,30 @@ void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg
 						}
 					}
 					biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+					if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
+						if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
+							anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+						}
+					}
+					if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
+						if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
+							anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+						}
+					}
 					EquippedBipeds.insert(anim);
 				
 					return;
 				}
-			}
+			
 		}
 	}
 	if (EquippedBipeds.contains(anim)) {
 		return;
 	}
 	if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-		if (anim->actorRef.get()->As<RE::Actor>()->Is3DLoaded()) {
+
 			biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
-		}
+		
 	}
 }
 void OnMessage(SKSE::MessagingInterface::Message* message)
@@ -1247,55 +1300,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		auto biped_equip_finish = (void (*)(RE::BipedAnim*, float, uint64_t, uint64_t, uint64_t))(REL::Offset(equip_biped).address());
 #endif
 
-		for (auto& p : BipedAnimToExtraWorn) {
-			std::set<int> to_erase;
-			if (p.first != nullptr) {
-				for (auto& ap : p.second) {
-					if (ap.second != nullptr) {
-						Clear3DHook(ap.second, 0, 0);
-
-						if (ap.second->actorRef.get() != nullptr && ap.second->actorRef.get()->As<RE::Actor>() != nullptr && ap.second->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-							ExtraWornAddons.erase(ap.second->actorRef.get()->As<RE::Actor>());
-							ExtraWornSlotMasks.erase(ap.second->actorRef.get()->As<RE::Actor>());
-							to_erase.insert(ap.first);
-
-							//if (ap.second->root == nullptr) {
-							//	ap.second->root = p.first->root;
-							//}
-							//biped_equip_finish(ap.second, 1, 0, 0, 0);
-						}
-					}
-				}
-				for (int formid : to_erase) {
-					p.second.erase(formid);
-				}
-			}
-		}
-		BipedAnimToExtraWorn.clear();
-		std::set<RE::BipedAnim*> EquippedBipedsCopy = std::set<RE::BipedAnim*>(EquippedBipeds);
-		if (EquippedBipedsCopy.size() > 0) {
-			for (RE::BipedAnim* a : EquippedBipedsCopy) {
-				if (a != nullptr) {
-					auto biped_clear_3d =
-						(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
-					biped_clear_3d(a, 0, 0);
-				}
-			}
-			EquippedBipeds.clear();
-		}
-		auto NewBipedsCopy = std::map<RE::BipedAnim*,std::set<RE::BipedAnim*>>(NewBipeds);
-		if (NewBipedsCopy.size() > 0) {
-			for (auto p : NewBipedsCopy) {
-				for (auto b : p.second) {
-					if (b != nullptr) {
-						auto biped_clear_3d =
-							(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
-						biped_clear_3d(b, 0, 0);
-					}
-				}
-			}
-			NewBipeds.clear();
-		}
+		
 	}
 }
 
