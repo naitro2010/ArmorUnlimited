@@ -582,14 +582,14 @@ bool Update3DHook(RE::Actor* Actor)
 		for (int i = 0; i < 0x20; i++) {
 			if (Biped1st != Biped3rd && Biped1st.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 0, 0, 0);
-					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 0, 0, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->objects[i], 1, 0, 0);
+					UnequipBipedHook(Biped1st.get(), &Biped1st.get()->bufferedObjects[i], 1, 0, 0);
 				}
 			}
 			if (Biped3rd.get()) {
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 0, 0, 0);
-					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 0, 0, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->objects[i], 1, 0, 0);
+					UnequipBipedHook(Biped3rd.get(), &Biped3rd.get()->bufferedObjects[i], 1, 0, 0);
 				}
 			}
 			for (auto s22 : slot22anims) {
@@ -597,8 +597,8 @@ bool Update3DHook(RE::Actor* Actor)
 					continue;
 				}
 				if ((equippedmask & (1 << i)) != 0) {
-					UnequipBipedHook(s22, &s22->objects[i], 0, 0, 0);
-					UnequipBipedHook(s22, &s22->bufferedObjects[i], 0, 0, 0);
+					UnequipBipedHook(s22, &s22->objects[i], 1, 0, 0);
+					UnequipBipedHook(s22, &s22->bufferedObjects[i], 1, 0, 0);
 				}
 			}
 		}
