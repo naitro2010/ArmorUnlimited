@@ -670,7 +670,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
-		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask()&4) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask()&0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 
 			return;
@@ -907,7 +907,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 
 		slotpatch_ptr[0x0] = 0x0f;
 		slotpatch_ptr[0x1] = 0x84;
-		if (!item || item->formType != RE::FormType::Armor || ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 4)) {
+		if (!item || item->formType != RE::FormType::Armor || ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
 			return orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
 		}
 
@@ -1104,28 +1104,29 @@ void UnequipBipedHook(RE::BipedAnim* anim, RE::BIPOBJECT* obj, uint64_t arg3, ui
 				RE::Actor* actor = anim->actorRef.get().get()->As<RE::Actor>();
 			}
 		}
-	}
-	bool containsaddon = false;
-	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
-		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
-			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+	
+		bool containsaddon = false;
+		if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
+			if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
+				anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+			}
 		}
-	}
-	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
-		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
-			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+		if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
+			if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
+				anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+			}
 		}
-	}
 
-	unequip_biped_fn(anim, obj, arg3, arg4, arg5);
-	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
-		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
-			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+		unequip_biped_fn(anim, obj, arg3, arg4, arg5);
+		if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get())) {
+			if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()].contains(anim)) {
+				anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(false).get()->root;
+			}
 		}
-	}
-	if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
-		if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
-			anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+		if (NewBipeds.contains(anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get())) {
+			if (NewBipeds[anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()].contains(anim)) {
+				anim->root = anim->actorRef.get().get()->As<RE::Actor>()->GetBiped1(true).get()->root;
+			}
 		}
 	}
 }
