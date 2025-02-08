@@ -608,7 +608,9 @@ bool Update3DHook(RE::Actor* Actor)
 				}
 			}
 		}
-		
+		SKSE::NiNodeUpdateEvent *event = new SKSE::NiNodeUpdateEvent();
+		event->reference = Actor;
+		SKSE::GetNiNodeUpdateEventSource()->SendEvent(event);
 		return retval;
 	}
 	return 0;
