@@ -818,6 +818,9 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 	if (item && !item->IsArmor()) {
 		return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 	}
+	if (item && item->formType == RE::FormType::Armor && ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
+		return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
+	}
 	bool done = false;
 	auto biped_clear_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
 	if (RE::Actor* actor = (RE::Actor*)arg2) {
