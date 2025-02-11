@@ -607,7 +607,7 @@ bool Update3DHook(RE::Actor* Actor)
 		SKSE::GetNiNodeUpdateEventSource()->SendEvent(event);
 		return retval;
 	}
-	return 0;
+	return orig_update_3d_hook_fn(Actor);
 }
 uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO** ItemPtrPtr)
 {
@@ -1172,9 +1172,9 @@ void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg
 	if (EquippedBipeds.contains(anim)) {
 		return;
 	}
-	if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-		biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
-	}
+	//if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
+	biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+	//}
 }
 void OnMessage(SKSE::MessagingInterface::Message* message)
 {
