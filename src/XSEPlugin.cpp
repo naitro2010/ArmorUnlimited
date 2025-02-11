@@ -344,6 +344,8 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		}
 	}
 }
+
+
 bool Update3DHook(RE::Actor* Actor)
 {
 	if (Actor != nullptr && Actor->Is3DLoaded()) {
@@ -602,12 +604,13 @@ bool Update3DHook(RE::Actor* Actor)
 				}
 			}
 		}
+		
 		SKSE::NiNodeUpdateEvent* event = new SKSE::NiNodeUpdateEvent();
 		event->reference = Actor;
 		SKSE::GetNiNodeUpdateEventSource()->SendEvent(event);
 		return retval;
 	}
-	return orig_update_3d_hook_fn(Actor);
+	return 0;
 }
 uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO** ItemPtrPtr)
 {
@@ -670,7 +673,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
 			ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 		}
-		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask()&0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
+		if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask() & 0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
 			orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 
 			return;
@@ -821,10 +824,12 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 	if (item && item->formType == RE::FormType::Armor && ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
 		return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 	}
+	
 	bool done = false;
 	auto biped_clear_3d = (void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
 	if (RE::Actor* actor = (RE::Actor*)arg2) {
-		if (actor->IsDisabled()) {
+		
+		if (actor->formType == RE::FormType::ActorCharacter && actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || actor->IsDisabled()) {
 			return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 		}
 		if (actor->formType == RE::FormType::ActorCharacter) {
@@ -834,6 +839,9 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 						return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 					}
 				}
+			}
+			if (actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>())) {
+				return real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
 			}
 		}
 		ret_code = real_unequip_fn(arg1, arg2, arg3, arg4, arg5);
@@ -910,7 +918,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 
 		slotpatch_ptr[0x0] = 0x0f;
 		slotpatch_ptr[0x1] = 0x84;
-		if (!item || item->formType != RE::FormType::Armor || ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
+		if (!item || item->formType != RE::FormType::Armor || actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
 			return orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
 		}
 
@@ -1172,9 +1180,9 @@ void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg
 	if (EquippedBipeds.contains(anim)) {
 		return;
 	}
-	//if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
-	biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
-	//}
+	if (anim->actorRef.get() != nullptr && anim->actorRef.get()->As<RE::Actor>() != nullptr && anim->actorRef.get()->As<RE::Actor>()->GetActorBase() != nullptr) {
+		biped_equip_unhooked(anim, arg2, arg3, arg4, arg5);
+	}
 }
 void OnMessage(SKSE::MessagingInterface::Message* message)
 {
