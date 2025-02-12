@@ -155,7 +155,7 @@ void (*orig_equiparmorstuff)(uint64_t arg1, uint64_t arg2, uint64_t arg3,
 	uint64_t arg4, uint64_t arg5) = nullptr;
 uint64_t (*orig_equiparmor)(RE::TESActorBase* actor, uint64_t arg2, RE::BSTSmartPointer<RE::BipedAnim>* bipedanim_sptr, RE::TESObjectARMO**) = nullptr;
 uint64_t (*orig_addwornitem_fn)(RE::Actor* actor, RE::TESBoundObject* item, int32_t count, uint64_t forceEquip, uint64_t arg4,
-	uint64_t arg5) = nullptr;
+	uint64_t arg5, uint64_t arg6, uint64_t arg7) = nullptr;
 uint64_t (*real_unequip_fn)(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) = nullptr;
 uint64_t (*orig_unequip_fn)(RE::BipedAnim*, RE::BIPOBJECT*, char, uint64_t) = nullptr;
 RE::BipedAnim* (*BipedAnimconstruct)(RE::BipedAnim*, void*, void*) = nullptr;
@@ -238,13 +238,14 @@ void Clear3DHook(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 	if (bipedanim->actorRef.get() != nullptr && bipedanim->actorRef.get()->As<RE::Actor>() && bipedanim->actorRef.get()->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>())) {
 		return biped_clear_3d(bipedanim, arg2, arg3);
 	}
+	/*
 	for (int i = 0; i < 0x2a; i++) {
 		UnequipBipedHook(bipedanim, &bipedanim->objects[i], arg3, 0, 0);
 	}
 	for (int i = 0; i < 0x2a; i++) {
 		UnequipBipedHook(bipedanim, &bipedanim->bufferedObjects[i], arg3, 0, 0);
 	}
-
+	*/
 	biped_clear_3d(bipedanim, arg2, arg3);
 	/*
 	if (BipedAnimToExtraWorn.contains(bipedanim)) {
@@ -918,7 +919,7 @@ void fake_unequip(uint64_t arg1, RE::Actor* actor, RE::TESBoundObject* item, uin
 }
 
 uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t count, uint64_t arg3, uint64_t arg4,
-	uint64_t arg5)
+	uint64_t arg5,uint64_t arg6,uint64_t arg7)
 {
 	uint64_t retval = 0;
 	if (actor != nullptr) {
@@ -928,7 +929,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 		slotpatch_ptr[0x0] = 0x0f;
 		slotpatch_ptr[0x1] = 0x84;
 		if (!item || item->formType != RE::FormType::Armor || actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || ((uint32_t)item->As<RE::TESObjectARMO>()->GetSlotMask() & 0x8c)) {
-			return orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
+			return orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5,arg6,arg7);
 		}
 
 		bool no1P = false;
@@ -1049,18 +1050,18 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 
 					if (allow_unlimited == 0) {
 						if (hasExtraKeyword == false) {
-							retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
+							retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5,arg6,arg7);
 						} else {
 							slotpatch_ptr[0x0] = 0x48;
 							slotpatch_ptr[0x1] = 0xe9;
-							retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
+							retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5,arg6,arg7);
 							slotpatch_ptr[0x0] = 0x0f;
 							slotpatch_ptr[0x1] = 0x84;
 						}
 					} else {
 						slotpatch_ptr[0x0] = 0x48;
 						slotpatch_ptr[0x1] = 0xe9;
-						retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
+						retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5,arg6,arg7);
 						slotpatch_ptr[0x0] = 0x0f;
 						slotpatch_ptr[0x1] = 0x84;
 					}
@@ -1092,7 +1093,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 				}
 			}
 		}
-		retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5);
+		retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5,arg6,arg7);
 		auto actor_handle = actor->GetHandle();
 		actor_handle.get().get()->IncRefCount();
 		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
@@ -1237,7 +1238,7 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 #endif
 		bool hook_worked = true;
 		orig_addwornitem_fn =
-			(uint64_t(*)(RE::Actor*, RE::TESBoundObject*, int32_t, uint64_t, uint64_t, uint64_t))(REL::Offset(addwornitem).address());
+			(uint64_t(*)(RE::Actor*, RE::TESBoundObject*, int32_t, uint64_t, uint64_t, uint64_t,uint64_t,uint64_t))(REL::Offset(addwornitem).address());
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)orig_addwornitem_fn, &NewAddWornItem);
