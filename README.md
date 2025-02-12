@@ -1,7 +1,9 @@
-# ArmorUnlimited Alpha based on CommonLibSSE-NG Plugin Template
+# ArmorUnlimited Beta
 
 ArmorUnlimited Plugin for Skyrim AE 1.6.1170
-
+## Patreon Donations
+- The following page is 18+ only because Skyrim has a 17+ age restriction on Steam.
+- [Patreon Donation Page](https://www.patreon.com/posts/mod-github-repos-122104991?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link)
 ## Requirements
 
 - Any terminal of your choice (e.g., PowerShell)
@@ -17,8 +19,6 @@ ArmorUnlimited Plugin for Skyrim AE 1.6.1170
   - After install, add a new environment variable named `VCPKG_ROOT` with the value as the path to the folder containing vcpkg
 
 ## User Requirements
-- [Skyrim AE 1.6.1170]
-  - This is currently the only partially working version with the 0.1.0 Alpha release, do not run on other versions until support is ready or things may break a lot.
 - [Address Library for SKSE](https://www.nexusmods.com/skyrimspecialedition/mods/32444)
   - Needed for SSE/AE
 - [VR Address Library for SKSEVR](https://www.nexusmods.com/skyrimspecialedition/mods/58101)
