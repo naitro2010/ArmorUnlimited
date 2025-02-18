@@ -271,18 +271,25 @@ uint64_t bipedvector_idx = 0;
 
 static uint8_t skee_nop_opcodes[0x1d];
 uintptr_t skee_nop_address = 0x0;
+
+static bool biped_hook_enable = false;
+RE::BSTSmartPointer<RE::BipedAnim>& (*GetBiped1_fn)(RE::Actor* actor, bool firstperson) = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson)) nullptr;
 const RE::BSTSmartPointer<RE::BipedAnim>* skee64_GetBiped1_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first(RE::Actor* actor, bool firstperson)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
-	if (bipedvector_idx < bipedVector3P.size() && firstperson == false) {
-		return new RE::BSTSmartPointer<RE::BipedAnim>(bipedVector3P[bipedvector_idx]);
+	if (biped_hook_enable == true) {
+		if (bipedvector_idx < bipedVector3P.size() && firstperson == false) {
+			return new RE::BSTSmartPointer<RE::BipedAnim>(bipedVector3P[bipedvector_idx]);
+		}
+		if (bipedvector_idx < bipedVector1P.size() && firstperson == true) {
+			return new RE::BSTSmartPointer<RE::BipedAnim>(bipedVector1P[bipedvector_idx]);
+		}
+		return nullptr;
 	}
-	if (bipedvector_idx < bipedVector1P.size() && firstperson == true) {
-		return new RE::BSTSmartPointer<RE::BipedAnim>(bipedVector1P[bipedvector_idx]);
-	}
-
-	return nullptr;
+	auto fn1=(RE::BSTSmartPointer<RE::BipedAnim> * (*)(RE::Actor * actor, bool firstperson)) GetBiped1_fn;
+	return fn1(actor, firstperson);
 }
+
 void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first(RE::Actor* actor, void* callback)
 {
 	std::lock_guard<std::recursive_mutex> lock(g_bipedstate_mutex);
@@ -290,10 +297,8 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		if (actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>())) {
 			return skee64_Biped1Original(actor, callback);
 		}
-		RE::BSTSmartPointer<RE::BipedAnim>& (*GetBiped1_fn)(RE::Actor* actor, bool firstperson) = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson)) nullptr;
-		if (GetBiped1_fn == nullptr) {
-			GetBiped1_fn = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson))(REL::Offset(GetActorBiped1).address());
-		}
+		
+
 
 		bipedVector1P.clear();
 		bipedVector3P.clear();
@@ -316,19 +321,13 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 		}
 		bipedVector3P.push_back(GetBiped1_fn(actor, false).get());
 		bipedVector1P.push_back(GetBiped1_fn(actor, true).get());
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
 
-		DetourAttach(&(PVOID&)GetBiped1_fn, &skee64_GetBiped1_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
-		if (DetourTransactionCommit() != NO_ERROR) {
-			return;
-		}
 
 		int bpsize = (int)bipedVector3P.size();
 		if ((int)bipedVector1P.size() >= bpsize) {
 			bpsize = (int)bipedVector1P.size();
 		}
-
+		biped_hook_enable = true;
 		REL::safe_fill(skee_nop_address, 0x90, 0x1d);
 		if (bpsize == 0) {
 			REL::safe_write((std::uintptr_t)skee_nop_address, (const void*)skee_nop_opcodes, 0x1d);
@@ -343,12 +342,7 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 			}
 		}
 
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-		DetourDetach(&(PVOID&)GetBiped1_fn, &skee64_GetBiped1_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
-		if (DetourTransactionCommit() != NO_ERROR) {
-			return;
-		}
+		biped_hook_enable = false;
 	}
 }
 
@@ -1245,6 +1239,14 @@ void OnMessage(SKSE::MessagingInterface::Message* message)
 		ret_from_bipedanim_dtor[0] = 0x90;
 #endif
 		bool hook_worked = true;
+		if (GetBiped1_fn == nullptr) {
+			GetBiped1_fn = (RE::BSTSmartPointer<RE::BipedAnim> & (*)(RE::Actor * actor, bool firstperson))(REL::Offset(GetActorBiped1).address());
+		}
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+
+		DetourAttach(&(PVOID&)GetBiped1_fn, &skee64_GetBiped1_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_REPORT_AS_RACEMENU_ERRORS_WITHOUT_ASKING_ArmorUnlimited_developers_first);
+		hook_worked &= (DetourTransactionCommit() == NO_ERROR);
 		orig_addwornitem_fn =
 			(uint64_t(*)(RE::Actor*, RE::TESBoundObject*, int32_t, uint64_t, uint64_t, uint64_t,uint64_t,uint64_t))(REL::Offset(addwornitem).address());
 		DetourTransactionBegin();
