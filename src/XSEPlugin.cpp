@@ -1204,15 +1204,9 @@ void EquipBipedHook(RE::BipedAnim* anim, float arg2, uint64_t arg3, uint64_t arg
 void OnMessage(SKSE::MessagingInterface::Message* message)
 {
 	if (message->type == SKSE::MessagingInterface::kPostPostLoad) {
-		logger::info("Loading armorunlimited.json");
-		std::ifstream f("data\\skse\\plugins\\armorunlimited.json");
-		json data = json::parse(f);
-		json::number_unsigned_t allowoverride = data["allowunlimited"];
+		
 		allow_unlimited = (int)1;
-		for (auto val : data["virtualslots"]) {
-			json::number_unsigned_t keywordFormID = val;
-			VirtualSlots.insert(RE::FormID(keywordFormID));
-		}
+
 		uint8_t* slotpatch_ptr = (uint8_t*)(REL::Offset(slotpatch_offset).address());
 		DWORD oldProtect = 0;
 
