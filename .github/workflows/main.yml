@@ -38,8 +38,10 @@ jobs:
           cd ${{github.workspace}}/build/Release
           mkdir artifacts
           cd artifacts
-          move ../ArmorUnlimited.dll
-          move ../ArmorUnlimited.pdb
+          mkdir SKSE
+          mkdir SKSE/Plugins
+          move ../ArmorUnlimited.dll SKSE/Plugins
+          move ../ArmorUnlimited.pdb SKSE/Plugins
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with: 
