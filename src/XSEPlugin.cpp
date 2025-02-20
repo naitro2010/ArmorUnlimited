@@ -677,11 +677,11 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 	if (bipedanim_sptr != nullptr && bipedanim_sptr->get() != nullptr && bipedanim_sptr->get()->actorRef.get().get() != nullptr) {
 		{
 			auto actor_ref_ptr = bipedanim_sptr->get()->actorRef.get();
-			if (actor_ref_ptr != nullptr) {
-				if (!ExtraWornSlotMasks.contains(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>())) {
-					ExtraWornSlotMasks.insert(std::pair(bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
+			if (actor_ref_ptr != nullptr && actor_ref_ptr.get() != nullptr && actor_ref_ptr.get()->As<RE::Actor>() != nullptr) {
+				if (!ExtraWornSlotMasks.contains(actor_ref_ptr.get()->As<RE::Actor>()) {
+					ExtraWornSlotMasks.insert(std::pair(actor_ref_ptr.get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 				}
-				if (bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || bipedanim_sptr->get()->actorRef.get().get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask() & 0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
+				if (actor_ref_ptr.get()->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || actor_ref_ptr.get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask() & 0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
 					orig_init_worn_armor_addon_fn(aa_new, armor, bipedanim_sptr, param_4);
 
 					return;
