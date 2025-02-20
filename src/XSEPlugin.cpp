@@ -678,7 +678,7 @@ void InitWornArmorAddonHook(RE::TESObjectARMA* aa_new, RE::TESObjectARMO* armor,
 		{
 			auto actor_ref_ptr = bipedanim_sptr->get()->actorRef.get();
 			if (actor_ref_ptr != nullptr && actor_ref_ptr.get() != nullptr && actor_ref_ptr.get()->As<RE::Actor>() != nullptr) {
-				if (!ExtraWornSlotMasks.contains(actor_ref_ptr.get()->As<RE::Actor>()) {
+				if (!ExtraWornSlotMasks.contains(actor_ref_ptr.get()->As<RE::Actor>())) {
 					ExtraWornSlotMasks.insert(std::pair(actor_ref_ptr.get()->As<RE::Actor>(), std::vector<uint32_t>(0x2a)));
 				}
 				if (actor_ref_ptr.get()->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()) || actor_ref_ptr.get()->As<RE::Actor>()->GetSkin() == armor || ((uint32_t)armor->GetSlotMask() & 0x8c) || armor->GetSlotMask() == RE::BGSBipedObjectForm::BipedObjectSlot::kModPelvisSecondary) {
