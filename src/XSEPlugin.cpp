@@ -235,7 +235,7 @@ void Clear3DHook(RE::BipedAnim* bipedanim, uint64_t arg2, uint64_t arg3)
 	if (bipedanim == nullptr) {
 		return;
 	}
-	auto ref_ptr=bipedanim->actorRef.get();
+	auto ref_ptr = bipedanim->actorRef.get();
 	if (ref_ptr != nullptr && ref_ptr->As<RE::Actor>() && (RE::TESFaction::LookupByEditorID("CreatureFaction") == nullptr || ref_ptr->As<RE::Actor>()->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>()))) {
 		return biped_clear_3d(bipedanim, arg2, arg3);
 	}
@@ -629,15 +629,15 @@ uint64_t EquipArmorHook(RE::TESActorBase* actorBase, uint64_t arg2, RE::BSTSmart
 				if (ItemPtr && ItemPtr->formID && ItemPtr->formType == RE::FormType::Armor) {
 					if (BipedAnimToExtraWorn[bipedanim_sptr->get()].contains(ItemPtr->formID)) {
 						if (BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID] != nullptr) {
-							auto ref_ptr=BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID]->actorRef.get();
+							auto ref_ptr = BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID]->actorRef.get();
 							if (ref_ptr && ref_ptr->As<RE::Actor>()) {
 								if (ref_ptr->As<RE::Actor>()->Is3DLoaded()) {
 									ref_ptr->IncRefCount();
 									bipedanim_sptr->get()->IncRef();
 									BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID]->IncRef();
 									//Clear3DHook(BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID], 1, 1);
-									bipedanim_sptr->get()->DecRef();
 									BipedAnimToExtraWorn[bipedanim_sptr->get()][ItemPtr->formID]->DecRef();
+									bipedanim_sptr->get()->DecRef();
 									ref_ptr->DecRefCount();
 								}
 							}
@@ -894,7 +894,7 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 		auto actor_handle = actor->GetHandle();
 		actor->IncRefCount();
 		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-			auto actor=actor_handle.get();
+			auto actor = actor_handle.get();
 			if (actor.get() != nullptr && actor->Is3DLoaded()) {
 				Update3DHook(actor.get());
 				actor->DecRefCount();
@@ -1089,10 +1089,10 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 					auto actor_handle = actor->GetHandle();
 					actor->IncRefCount();
 					SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-						auto actor=actor_handle.get();
+						auto actor = actor_handle.get();
 						if (actor.get() != nullptr && actor->Is3DLoaded()) {
 							Update3DHook(actor.get());
-							
+							actor->DecRefCount();
 						} else if (actor) {
 							actor->DecRefCount();
 						}
@@ -1106,7 +1106,7 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 		auto actor_handle = actor->GetHandle();
 		actor->IncRefCount();
 		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-			auto actor=actor_handle.get();
+			auto actor = actor_handle.get();
 			if (actor.get() != nullptr && actor->Is3DLoaded()) {
 				Update3DHook(actor.get());
 				actor->DecRefCount();
