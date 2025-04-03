@@ -1100,30 +1100,14 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 							}
 						}
 					}
-					auto actor_handle = actor->GetHandle();
-					actor->IncRefCount();
-						auto actor2 = actor_handle.get();
-						if (actor2.get() != nullptr && actor2->Is3DLoaded()) {
-							Update3DHook(actor2.get());
-							actor2->DecRefCount();
-						} else if (actor2) {
-							actor2->DecRefCount();
-						}
+
 
 					return retval;
 				}
 			}
 		}
 		retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5, arg6, arg7);
-		auto actor_handle = actor->GetHandle();
-		actor->IncRefCount();
-			auto actor2 = actor_handle.get();
-			if (actor2.get() != nullptr && actor2->Is3DLoaded()) {
-				Update3DHook(actor2.get());
-				actor2->DecRefCount();
-			} else if (actor) {
-				actor2->DecRefCount();
-			}
+
 	}
 	return retval;
 }
