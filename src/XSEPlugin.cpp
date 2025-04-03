@@ -347,7 +347,14 @@ void skee64_Biped1Hook_ERRORS_ABOVE_THIS_CALL_ARE_ArmorUnlimited_Errors_DO_NOT_R
 bool Update3DHook(RE::Actor* Actor)
 {
 	{
+		if (Actor == nullptr) {
+			return false;
+		}
 		RE::NiPointer actor_ref(Actor);
+		if (actor_ref == nullptr) {
+			return false;
+		}
+		RE::ActorHandle actor_handle = actor_ref->GetHandle();
 		if (actor_ref.get() != nullptr) {
 			if (RE::TESFaction::LookupByEditorID("CreatureFaction") == nullptr || Actor->IsInFaction(RE::TESFaction::LookupByEditorID("CreatureFaction")->As<RE::TESFaction>())) {
 				return orig_update_3d_hook_fn(Actor);
@@ -365,7 +372,10 @@ bool Update3DHook(RE::Actor* Actor)
 			auto biped_clear_3d =
 				(void (*)(RE::BipedAnim*, uint64_t, uint64_t))(REL::Offset(unequip_all_offset).address());
 			UpdatedBipeds.clear();
-			bool retval = orig_update_3d_hook_fn(Actor);
+			bool retval = false;
+			if (auto actor_handle_ref = actor_handle.get()) {
+				retval = orig_update_3d_hook_fn(actor_handle_ref.get());
+			}
 			std::set<RE::BipedAnim*> erased_bipeds;
 			if (NewBipeds.contains(Biped3rd.get())) {
 				for (auto anim : NewBipeds[Biped3rd.get()]) {
@@ -490,7 +500,10 @@ bool Update3DHook(RE::Actor* Actor)
 				}
 			}
 			UpdatedBipeds.clear();
-			retval = orig_update_3d_hook_fn(Actor);
+			if (auto actor_handle_ref = actor_handle.get()) {
+				if (actor_handle_ref->Is3DLoaded())
+					retval = orig_update_3d_hook_fn(actor_handle_ref.get());
+			}
 			erased_bipeds.clear();
 			if (NewBipeds.contains(Biped3rd.get())) {
 				for (auto anim : NewBipeds[Biped3rd.get()]) {
