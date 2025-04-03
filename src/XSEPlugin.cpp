@@ -909,15 +909,13 @@ uint64_t UnequipHook(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4,
 	if (RE::Actor* actor = (RE::Actor*)arg2) {
 		auto actor_handle = actor->GetHandle();
 		actor->IncRefCount();
-		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-			auto actor = actor_handle.get();
-			if (actor.get() != nullptr && actor->Is3DLoaded()) {
-				Update3DHook(actor.get());
-				actor->DecRefCount();
-			} else if (actor) {
-				actor->DecRefCount();
+			auto actor2 = actor_handle.get();
+			if (actor2.get() != nullptr && actor2->Is3DLoaded()) {
+				Update3DHook(actor2.get());
+				actor2->DecRefCount();
+			} else if (actor2) {
+				actor2->DecRefCount();
 			}
-		});
 	}
 	return ret_code;
 }
@@ -1104,15 +1102,13 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 					}
 					auto actor_handle = actor->GetHandle();
 					actor->IncRefCount();
-					SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-						auto actor = actor_handle.get();
-						if (actor.get() != nullptr && actor->Is3DLoaded()) {
-							Update3DHook(actor.get());
-							actor->DecRefCount();
-						} else if (actor) {
-							actor->DecRefCount();
+						auto actor2 = actor_handle.get();
+						if (actor2.get() != nullptr && actor2->Is3DLoaded()) {
+							Update3DHook(actor2.get());
+							actor2->DecRefCount();
+						} else if (actor2) {
+							actor2->DecRefCount();
 						}
-					});
 
 					return retval;
 				}
@@ -1121,15 +1117,13 @@ uint64_t NewAddWornItem(RE::Actor* actor, RE::TESBoundObject* item, int32_t coun
 		retval |= orig_addwornitem_fn(actor, item, count, arg3, arg4, arg5, arg6, arg7);
 		auto actor_handle = actor->GetHandle();
 		actor->IncRefCount();
-		SKSE::GetTaskInterface()->AddTask([actor_handle]() {
-			auto actor = actor_handle.get();
-			if (actor.get() != nullptr && actor->Is3DLoaded()) {
-				Update3DHook(actor.get());
-				actor->DecRefCount();
+			auto actor2 = actor_handle.get();
+			if (actor2.get() != nullptr && actor2->Is3DLoaded()) {
+				Update3DHook(actor2.get());
+				actor2->DecRefCount();
 			} else if (actor) {
-				actor->DecRefCount();
+				actor2->DecRefCount();
 			}
-		});
 	}
 	return retval;
 }
